@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindful Moments - Meditation Timer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for ambient sounds -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Phosphor Icons for simple clean icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Google Sans Font (via getbutterfly trick / Fontsource CDN) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+        
+        /* Fallback if Google Fonts API fails for Google Sans */
+        @font-face {
+            font-family: 'Google Sans Alternative';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://cdn.jsdelivr.net/fontsource/fonts/google-sans@latest/latin-400-normal.woff2) format('woff2');
+        }
+
+        body {
+            /* Try Google's API first, then fontsource, then standard sans-serif */
+            font-family: 'Google Sans', 'Google Sans Alternative', sans-serif;
+            /* Mild color psychology: Soft pale pink background */
+            background-color: #fdf5f6; /* Pale pink */
+            color: #334155; /* Soft dark gray for text readability */
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Custom Scrollbar for notes/calendar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Pulsing animation for active timer */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(134, 239, 172, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(134, 239, 172, 0); }
+        }
+        
+        .timer-active .timer-circle {
+            animation: pulse-ring 4s infinite ease-in-out;
+            background-color: #dcfce7; /* Soft green */
+            border-color: #86efac;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Flame and Particle animations */
+        @keyframes flame-flicker {
+            0%, 100% { opacity: 1; transform: scale(1) translateY(0); filter: brightness(1); }
+            50% { opacity: 0.85; transform: scale(1.05) translateY(-2px); filter: brightness(1.2); }
+        }
+        @keyframes fierce-flicker {
+            0%, 100% { opacity: 1; transform: scale(1) translateY(0) rotate(-2deg); filter: brightness(1.2); }
+            50% { opacity: 0.9; transform: scale(1.15) translateY(-4px) rotate(2deg); filter: brightness(1.4); }
+        }
+        @keyframes float-up-fade {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-30px) scale(0); opacity: 0; }
+        }
+        .animate-flame {
+            animation: flame-flicker 2s infinite ease-in-out;
+            display: inline-block;
+            transition: all 0.5s ease;
+        }
+        .fierce-flame {
+            animation: fierce-flicker 0.4s infinite ease-in-out;
+            display: inline-block;
+            transition: all 0.5s ease;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: float-up-fade 1s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: none;
+        }
+
+        /* Hide elements utility */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navigation / Header -->
+    <header class="w-full p-4 md:p-6 flex justify-between items-center z-10 glass-panel shadow-sm">
+        <div class="flex items-center gap-2 text-emerald-700">
+            <i class="ph ph-flower-lotus text-3xl"></i>
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight">Mindful Moments</h1>
+        </div>
+        <div class="flex gap-4">
+            <button id="nav-timer" class="text-emerald-800 hover:text-emerald-600 font-medium transition-colors border-b-2 border-emerald-500 pb-1">Timer</button>
+            <button id="nav-stats" class="text-slate-500 hover:text-emerald-600 font-medium transition-colors pb-1">Journey</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 w-full max-w-4xl mx-auto relative h-full">
+
+        <!-- VIEW: TIMER -->
+        <section id="view-timer" class="w-full flex flex-col items-center justify-center h-full transition-opacity duration-300">
+            
+            <!-- Daily Quote Area -->
+            <div class="mb-12 text-center max-w-2xl px-4 animate-fade-in">
+                <p id="quote-text" class="text-lg md:text-xl font-medium text-emerald-900 leading-relaxed italic opacity-80 transition-opacity duration-500"></p>
+                <p id="quote-author" class="text-sm mt-3 text-emerald-700 font-semibold opacity-60"></p>
+            </div>
+
+            <!-- Timer Display -->
+            <div class="relative flex flex-col items-center mb-8">
+                <div class="timer-circle w-64 h-64 md:w-80 md:h-80 rounded-full border-4 border-emerald-100 bg-white shadow-xl flex flex-col items-center justify-center transition-all duration-1000 ease-in-out relative z-10">
+                    <span id="time-display" class="text-6xl md:text-7xl font-bold text-emerald-800 tabular-nums tracking-tighter">10:00</span>
+                    <span id="timer-status" class="text-emerald-600/70 mt-2 text-sm font-medium tracking-widest uppercase">Ready</span>
+                </div>
+            </div>
+
+            <!-- Timer Controls -->
+            <div class="flex flex-col items-center w-full max-w-md gap-6">
+                <!-- Duration Slider (hidden when active) -->
+                <div id="duration-selector" class="w-full flex flex-col items-center gap-2">
+                    <div class="flex justify-between w-full text-xs text-slate-500 font-medium px-2">
+                        <span>1 min</span>
+                        <span>60 min</span>
+                    </div>
+                    <input type="range" id="duration-slider" min="1" max="60" value="10" class="w-full h-2 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    <p class="text-sm text-emerald-700 mt-1 font-medium"><span id="slider-value">10</span> minutes</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4">
+                    <button id="btn-start" class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+                        <i class="ph ph-play-circle text-2xl"></i> Start
+                    </button>
+                    <button id="btn-pause" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-all flex items-center gap-2">
+                        <i class="ph ph-pause-circle text-2xl"></i> Pause
+                    </button>
+                    <button id="btn-stop" class="hidden bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-full font-bold shadow-lg transition-all flex items-center gap-2">
+                        <i class="ph ph-stop-circle text-2xl"></i> End
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-2 mt-2">
+                    <button id="btn-sound-toggle" class="text-slate-400 hover:text-emerald-600 transition-colors p-2 rounded-full hover:bg-emerald-50">
+                        <i id="sound-icon" class="ph-fill ph-speaker-high text-xl"></i>
+                    </button>
+                    <span class="text-xs text-slate-500">Spiritual Sounds</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: STATS & CALENDAR -->
+        <section id="view-stats" class="hidden w-full flex-col h-full overflow-y-auto pb-10 pt-4 px-4 transition-opacity duration-300">
+            <h2 class="text-2xl font-bold text-emerald-900 mb-6 text-center">Your Journey</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <!-- Summary Cards -->
+                <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                    <i class="ph-fill ph-hourglass-high text-emerald-500 text-3xl mb-2"></i>
+                    <p class="text-slate-500 text-sm font-medium">Total Time</p>
+                    <p id="stat-total-hours" class="text-2xl font-bold text-emerald-800">0 h 0 m</p>
+                </div>
+                <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                    <i class="ph-fill ph-calendar-check text-sky-500 text-3xl mb-2"></i>
+                    <p class="text-slate-500 text-sm font-medium">Sessions</p>
+                    <p id="stat-total-sessions" class="text-2xl font-bold text-emerald-800">0</p>
+                </div>
+                <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                    <div class="relative flex items-center justify-center h-12 w-12 mb-2">
+                        <div id="flame-particles" class="absolute inset-0 pointer-events-none"></div>
+                        <i id="streak-flame-icon" class="ph-fill ph-fire text-3xl animate-flame relative z-10"></i>
+                    </div>
+                    <p class="text-slate-500 text-sm font-medium">Current Streak</p>
+                    <p id="stat-streak" class="text-2xl font-bold text-emerald-800">0 days</p>
+                </div>
+            </div>
+
+            <!-- Calendar & History -->
+            <div class="flex flex-col md:flex-row gap-6 w-full">
+                <!-- Simple Calendar (Recent Days) -->
+                <div class="glass-panel rounded-2xl p-6 md:w-1/2 shadow-sm">
+                    <h3 class="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2"><i class="ph ph-calendar"></i> Recent Activity</h3>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm">
+                        <!-- Calendar headers and days injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Journal / Notes List -->
+                <div class="glass-panel rounded-2xl p-6 md:w-1/2 shadow-sm flex flex-col h-80">
+                    <h3 class="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2"><i class="ph ph-notebook"></i> Reflection Journal</h3>
+                    <div id="journal-list" class="flex-grow overflow-y-auto pr-2 space-y-3">
+                        <!-- Journal entries injected via JS -->
+                        <div class="text-center text-slate-400 mt-10 italic">No entries yet. Complete a session to reflect.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Feedback Modal (Appears after session) -->
+    <div id="modal-feedback" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300" id="modal-feedback-content">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-4">
+                    <i class="ph-fill ph-hands-praying text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-emerald-900">Session Complete</h3>
+                <p class="text-slate-500 mt-2">Take a deep breath. How was your experience?</p>
+            </div>
+            
+            <div class="flex justify-center gap-4 mb-6">
+                <button class="mood-btn text-4xl grayscale hover:grayscale-0 hover:scale-110 transition-all" data-mood="Struggled">☁️</button>
+                <button class="mood-btn text-4xl grayscale hover:grayscale-0 hover:scale-110 transition-all" data-mood="Neutral">🌤️</button>
+                <button class="mood-btn text-4xl grayscale hover:grayscale-0 hover:scale-110 transition-all" data-mood="Peaceful">☀️</button>
+            </div>
+
+            <textarea id="feedback-note" class="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 resize-none h-28 mb-4" placeholder="Jot down any thoughts, feelings, or distractions..."></textarea>
+            
+            <button id="btn-save-feedback" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors disabled:opacity-50">
+                Save Reflection
+            </button>
+            <button id="btn-skip-feedback" class="w-full mt-2 text-slate-500 hover:text-slate-700 py-2 text-sm font-medium">
+                Skip for now
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 opacity-0 translate-y-10 pointer-events-none z-50 flex items-center gap-2">
+        <i class="ph ph-info"></i> <span id="toast-msg">Notification</span>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="modal-auth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300" id="modal-auth-content">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 mb-4 shadow-inner">
+                    <i class="ph-fill ph-user-circle text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-emerald-900">Welcome</h3>
+                <p class="text-slate-500 mt-2 text-sm">Login or create an account to save your reflections and track your mindful moments.</p>
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <button id="btn-login-google" class="w-full bg-white border-2 border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 text-slate-700 font-bold py-3 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                    Continue with Google
+                </button>
+                <div class="relative flex items-center py-2">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+                <input type="email" id="auth-email" placeholder="Email address" class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50">
+                <input type="password" id="auth-password" placeholder="Password" class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50">
+                <button id="btn-login-email" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors mt-1">
+                    Sign In / Create Account
+                </button>
+                <button id="btn-cancel-auth" class="w-full mt-2 text-slate-500 hover:text-slate-700 py-2 text-sm font-medium">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Setup
+        let app, db, auth;
+        let currentUser = null;
+        let useFirebase = false;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'meditation-app-default';
+
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                useFirebase = true;
+                
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if (user) {
+                        loadData(); // reload data from firestore
+                    }
+                });
+
+                if (typeof __initial_auth_token !== 'undefined') {
+                    signInWithCustomToken(auth, __initial_auth_token).catch(console.error);
+                }
+            }
+        } catch (e) {
+            console.warn("Firebase initialization skipped. Using memory mode.");
+        }
+
+        // --- DATA: 50 Mindfulness Quotes ---
+        const quotes = [
+            { text: "Peace comes from within. Do not seek it without.", author: "Buddha" },
+            { text: "You can't stop the waves, but you can learn to surf.", author: "Jon Kabat-Zinn" },
+            { text: "If you want to conquer the anxiety of life, live in the moment, live in the breath.", author: "Amit Ray" },
+            { text: "Just when you feel you have no time to relax, know this is the moment you most need to relax.", author: "Matt Haig" },
+            { text: "Nowhere can man find a quieter or more untroubled retreat than in his own soul.", author: "Marcus Aurelius" },
+            { text: "Be present, be patient, be gentle, be kind… everything else will take care of itself.", author: "Andy Puddicombe" },
+            { text: "When you're quiet, everything settles on the floor of your mind like sediment in undisturbed still water.", author: "Megan Monahan" },
+            { text: "Between stimulus and response there is a space. In that space is our power to choose our response.", author: "Victor Frankl" },
+            { text: "Breathe in the good. Breathe out the bad.", author: "Unknown" },
+            { text: "Be happy in the moment, that's enough. Each moment is all we need, not more.", author: "Mother Teresa" },
+            { text: "Be content with what you have; rejoice in the way things are. When you realize there is nothing lacking, the whole world belongs to you.", author: "Lao Tzu" },
+            { text: "Meditation practice isn't about trying to throw ourselves away and become something better. It's about befriending who we are already.", author: "Pema Chödrön" },
+            { text: "Ask yourself: Where am I? Answer: Here. Ask yourself: What time is it? Answer: Now. Say it until you can hear it.", author: "Ram Dass" },
+            { text: "Mindfulness is simply being aware of what is happening right now without wishing it were different.", author: "James Baraz" },
+            { text: "When you arise in the morning, think of what a precious privilege it is to be alive - to breathe, to think, to enjoy, to love.", author: "Marcus Aurelius" },
+            { text: "We already have everything we are looking for, everything we want to become.", author: "Thich Nhat Hanh" },
+            { text: "If you want to be happy, practice compassion.", author: "Dalai Lama" },
+            { text: "Wherever you go, there you are.", author: "Jon Kabat-Zinn" },
+            { text: "Your actions are your only true belongings.", author: "Allan Lokos" },
+            { text: "The little things? The little moments? They aren't little.", author: "Jon Kabat-Zinn" },
+            { text: "Mindfulness isn't difficult, we just need to remember to do it.", author: "Sharon Salzberg" },
+            { text: "The most precious gift we can offer others is our presence.", author: "Thich Nhat Hanh" },
+            { text: "Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.", author: "Thich Nhat Hanh" },
+            { text: "Life is a dance. Mindfulness is witnessing that dance.", author: "Amit Ray" },
+            { text: "When you bow, you should just bow; when you sit, you should just sit; when you eat, you should just eat.", author: "Shunryu Suzuki" },
+            { text: "Looking at beauty in the world, is the first step of purifying the mind.", author: "Amit Ray" },
+            { text: "The best way to capture moments is to pay attention. This is how we cultivate mindfulness.", author: "Jon Kabat-Zinn" },
+            { text: "Rejoicing in ordinary things is not sentimental or trite. It actually takes guts.", author: "Pema Chödrön" },
+            { text: "We have only now, only this single eternal moment opening and unfolding before us, day and night.", author: "Jack Kornfield" },
+            { text: "Walk as if you are kissing the Earth with your feet.", author: "Thich Nhat Hanh" },
+            { text: "Live the actual moment. Only this actual moment is life.", author: "Thích Nhất Hạnh" },
+            { text: "Much of spiritual life is self-acceptance, maybe all of it.", author: "Jack Kornfield" },
+            { text: "Respond; don't react. Listen; don't talk. Think; don't assume.", author: "Raji Lukkoor" },
+            { text: "Don't believe everything you think. Thoughts are just that – thoughts.", author: "Allan Lokos" },
+            { text: "There is something wonderfully bold and liberating about saying yes to our entire imperfect and messy life.", author: "Tara Brach" },
+            { text: "Don't let life harden your heart.", author: "Pema Chödrön" },
+            { text: "You only lose what you cling to.", author: "Buddha" },
+            { text: "Our life is shaped by our mind, for we become what we think.", author: "Buddha" },
+            { text: "Each morning we are born again. What we do today is what matters most.", author: "Buddha" },
+            { text: "Nothing is forever except change.", author: "Buddha" },
+            { text: "Be where you are, otherwise you will miss your life.", author: "Buddha" },
+            { text: "Impermanence is a principle of harmony. When we don't struggle against it, we are in harmony with reality.", author: "Pema Chödrön" },
+            { text: "Mindfulness is the root of all the methods that tame the mind.", author: "Patrul Rinpoche" },
+            { text: "At certain times, a silent mind is very important, but 'silent' does not mean closed.", author: "Lama Yeshe" },
+            { text: "Whatever is not yours: let go of it. Your letting go of it will be for your long-term happiness & benefit.", author: "Buddha" },
+            { text: "Imperfection is not our personal problem – it is a natural part of living.", author: "Tara Brach" },
+            { text: "Let go of the battle. Breathe quietly and let it be.", author: "Jack Kornfield" },
+            { text: "Nothing is wrong. Whatever is happening is just 'real life.'", author: "Sylvia Boorstein" },
+            { text: "If you have time to be mindful, you have time to meditate.", author: "Ajahn Chah" },
+            { text: "Mindfulness is life. Whenever we don't have mindfulness, when we are heedless, it's as if we are dead.", author: "Ajahn Chah" }
+        ];
+
+        // --- STATE ---
+        let timerInterval = null;
+        let timeLeft = 600; // default 10 mins in seconds
+        let totalSessionTime = 600; 
+        let isRunning = false;
+        let isSoundEnabled = true;
+        let currentSessionStartTime = null;
+        
+        // Tone.js Synth nodes
+        let droneSynth = null;
+        let bellSynth = null;
+        let isAudioInitialized = false;
+
+        // Data Storage Structure
+        let appData = {
+            sessions: [], // { date: string, durationSec: number, mood: string, note: string }
+            lastLogin: null
+        };
+
+        // DOM Elements
+        const elTimeDisplay = document.getElementById('time-display');
+        const elDurationSlider = document.getElementById('duration-slider');
+        const elSliderValue = document.getElementById('slider-value');
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const btnStop = document.getElementById('btn-stop');
+        const elDurationSelector = document.getElementById('duration-selector');
+        const timerStatus = document.getElementById('timer-status');
+        const timerSection = document.getElementById('view-timer');
+        
+        const modalFeedback = document.getElementById('modal-feedback');
+        const modalFeedbackContent = document.getElementById('modal-feedback-content');
+        const btnSaveFeedback = document.getElementById('btn-save-feedback');
+        const btnSkipFeedback = document.getElementById('btn-skip-feedback');
+        const feedbackNote = document.getElementById('feedback-note');
+        let selectedMood = null;
+
+        // Auth DOM Elements
+        const modalAuth = document.getElementById('modal-auth');
+        const modalAuthContent = document.getElementById('modal-auth-content');
+        const btnLoginGoogle = document.getElementById('btn-login-google');
+        const btnLoginEmail = document.getElementById('btn-login-email');
+        const btnCancelAuth = document.getElementById('btn-cancel-auth');
+
+        // --- INITIALIZATION ---
+        function initApp() {
+            loadData();
+            displayRandomQuote();
+            updateTimeDisplay(elDurationSlider.value * 60);
+            renderCalendarAndStats();
+            
+            // Check streak
+            const today = new Date().toDateString();
+            if (appData.lastLogin !== today) {
+                appData.lastLogin = today;
+                saveData();
+            }
+        }
+
+        // --- AUDIO (Tone.js) ---
+        async function initAudio() {
+            if (isAudioInitialized) return;
+            
+            await Tone.start();
+            
+            // Soft Drone for background
+            droneSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 2, decay: 1, sustain: 1, release: 4 },
+                volume: -20
+            }).toDestination();
+
+            // Add some chorus and reverb for spirituality
+            const chorus = new Tone.Chorus(4, 2.5, 0.5).toDestination().start();
+            const reverb = new Tone.Reverb({ decay: 5, wet: 0.5 }).toDestination();
+            droneSynth.connect(chorus);
+            droneSynth.connect(reverb);
+
+            // Bell for start/end
+            bellSynth = new Tone.MetalSynth({
+                frequency: 400,
+                envelope: { attack: 0.01, decay: 4, release: 2 },
+                harmonicity: 3.1,
+                modulationIndex: 32,
+                resonance: 4000,
+                octaves: 1.5,
+                volume: -10
+            }).connect(reverb).toDestination();
+
+            isAudioInitialized = true;
+        }
+
+        function playStartBell() {
+            if (!isSoundEnabled || !bellSynth) return;
+            bellSynth.triggerAttackRelease("4n");
+        }
+
+        function playEndBell() {
+            if (!isSoundEnabled || !bellSynth) return;
+            // Play three soft strikes
+            bellSynth.triggerAttackRelease("4n", "+0");
+            bellSynth.triggerAttackRelease("4n", "+1.5");
+            bellSynth.triggerAttackRelease("4n", "+3");
+        }
+
+        function startDrone() {
+            if (!isSoundEnabled || !droneSynth) return;
+            // Play a soothing C major chord spread out
+            droneSynth.triggerAttack(["C3", "E3", "G3", "C4"]);
+        }
+
+        function stopDrone() {
+            if (droneSynth) {
+                droneSynth.triggerRelease(["C3", "E3", "G3", "C4"]);
+            }
+        }
+
+        document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+            isSoundEnabled = !isSoundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (isSoundEnabled) {
+                icon.className = "ph-fill ph-speaker-high text-xl";
+                document.getElementById('btn-sound-toggle').classList.replace('text-slate-400', 'text-emerald-600');
+                if (isRunning) startDrone();
+            } else {
+                icon.className = "ph ph-speaker-x text-xl text-slate-400";
+                document.getElementById('btn-sound-toggle').classList.replace('text-emerald-600', 'text-slate-400');
+                stopDrone();
+            }
+        });
+
+        // --- TIMER LOGIC ---
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateTimeDisplay(seconds) {
+            elTimeDisplay.textContent = formatTime(seconds);
+        }
+
+        elDurationSlider.addEventListener('input', (e) => {
+            if (!isRunning) {
+                const mins = e.target.value;
+                elSliderValue.textContent = mins;
+                timeLeft = mins * 60;
+                totalSessionTime = timeLeft;
+                updateTimeDisplay(timeLeft);
+            }
+        });
+
+        btnStart.addEventListener('click', async () => {
+            if (!isAudioInitialized) await initAudio();
+            
+            isRunning = true;
+            currentSessionStartTime = Date.now();
+            
+            // UI Updates
+            document.body.classList.add('timer-active');
+            btnStart.classList.add('hidden');
+            elDurationSelector.classList.add('hidden');
+            btnPause.classList.remove('hidden');
+            btnStop.classList.remove('hidden');
+            timerStatus.textContent = "Meditating";
+            
+            // Background change for deeper focus
+            document.body.style.backgroundColor = '#f0fdf4'; // very light green
+            
+            playStartBell();
+            setTimeout(startDrone, 2000); // fade in drone after bell
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimeDisplay(timeLeft);
+                
+                if (timeLeft <= 0) {
+                    endSession(true); // Completed
+                }
+            }, 1000);
+        });
+
+        btnPause.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            isRunning = false;
+            stopDrone();
+            
+            document.body.classList.remove('timer-active');
+            btnPause.classList.add('hidden');
+            btnStart.classList.remove('hidden');
+            btnStart.innerHTML = '<i class="ph ph-play-circle text-2xl"></i> Resume';
+            timerStatus.textContent = "Paused";
+        });
+
+        btnStop.addEventListener('click', () => {
+            endSession(false); // Ended early
+        });
+
+        function endSession(completed) {
+            clearInterval(timerInterval);
+            isRunning = false;
+            stopDrone();
+            
+            if (completed) {
+                playEndBell();
+            }
+
+            // Calculate actual time meditated
+            const intendedTime = elDurationSlider.value * 60;
+            const actualTimeSec = intendedTime - Math.max(0, timeLeft);
+            
+            resetTimerUI();
+
+            if (actualTimeSec >= 60) { // Only save sessions > 1 minute
+                showFeedbackModal(actualTimeSec);
+            } else {
+                showToast("Session too short to record.");
+            }
+        }
+
+        function resetTimerUI() {
+            document.body.classList.remove('timer-active');
+            document.body.style.backgroundColor = '#fdf5f6'; // back to pink
+            
+            btnStart.classList.remove('hidden');
+            btnStart.innerHTML = '<i class="ph ph-play-circle text-2xl"></i> Start';
+            btnPause.classList.add('hidden');
+            btnStop.classList.add('hidden');
+            elDurationSelector.classList.remove('hidden');
+            
+            timeLeft = elDurationSlider.value * 60;
+            updateTimeDisplay(timeLeft);
+            timerStatus.textContent = "Ready";
+        }
+
+        // --- FEEDBACK & DATA ---
+        let pendingSessionData = null;
+
+        function showFeedbackModal(durationSec) {
+            pendingSessionData = {
+                date: new Date().toISOString(),
+                durationSec: durationSec,
+                mood: 'Neutral', // default
+                note: ''
+            };
+
+            // Reset modal state
+            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.add('grayscale'));
+            document.querySelector('.mood-btn[data-mood="Neutral"]').classList.remove('grayscale');
+            selectedMood = 'Neutral';
+            feedbackNote.value = '';
+            
+            modalFeedback.classList.remove('hidden');
+            setTimeout(() => {
+                modalFeedback.classList.remove('opacity-0');
+                modalFeedbackContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function hideFeedbackModal() {
+            modalFeedback.classList.add('opacity-0');
+            modalFeedbackContent.classList.add('scale-95');
+            setTimeout(() => {
+                modalFeedback.classList.add('hidden');
+                pendingSessionData = null;
+            }, 300);
+        }
+
+        // Mood Selection
+        document.querySelectorAll('.mood-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mood-btn').forEach(b => b.classList.add('grayscale'));
+                e.target.classList.remove('grayscale');
+                selectedMood = e.target.dataset.mood;
+            });
+        });
+
+        let pendingAction = null;
+
+        btnSaveFeedback.addEventListener('click', () => {
+            if (!currentUser) {
+                pendingAction = 'save';
+                showAuthModal();
+                return;
+            }
+            saveCurrentFeedback();
+        });
+
+        function saveCurrentFeedback() {
+            if (pendingSessionData) {
+                pendingSessionData.mood = selectedMood;
+                pendingSessionData.note = feedbackNote.value.trim();
+                appData.sessions.push(pendingSessionData);
+                saveData();
+                renderCalendarAndStats();
+                showToast("Session recorded. Great job!");
+            }
+            hideFeedbackModal();
+        }
+
+        btnSkipFeedback.addEventListener('click', () => {
+            if (!currentUser) {
+                pendingAction = 'skip';
+                showAuthModal();
+                return;
+            }
+            saveCurrentSkip();
+        });
+
+        function saveCurrentSkip() {
+            if (pendingSessionData) {
+                // Save just time, no feedback
+                appData.sessions.push(pendingSessionData);
+                saveData();
+                renderCalendarAndStats();
+                showToast("Session recorded.");
+            }
+            hideFeedbackModal();
+        }
+
+        // --- AUTH UI ---
+        function showAuthModal() {
+            modalAuth.classList.remove('hidden');
+            setTimeout(() => {
+                modalAuth.classList.remove('opacity-0');
+                modalAuthContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function hideAuthModal() {
+            modalAuth.classList.add('opacity-0');
+            modalAuthContent.classList.add('scale-95');
+            setTimeout(() => {
+                modalAuth.classList.add('hidden');
+            }, 300);
+        }
+
+        btnCancelAuth.addEventListener('click', hideAuthModal);
+
+        function executePendingAction() {
+            if (pendingAction === 'save') saveCurrentFeedback();
+            if (pendingAction === 'skip') saveCurrentSkip();
+            pendingAction = null;
+        }
+
+        btnLoginGoogle.addEventListener('click', async () => {
+            if (useFirebase && auth) {
+                try {
+                    const provider = new GoogleAuthProvider();
+                    await signInWithPopup(auth, provider);
+                    hideAuthModal();
+                    executePendingAction();
+                } catch (e) {
+                    console.error("Login failed, attempting anonymous fallback", e);
+                    await signInAnonymously(auth);
+                    hideAuthModal();
+                    executePendingAction();
+                }
+            } else {
+                currentUser = { uid: 'mock-user-123' };
+                hideAuthModal();
+                executePendingAction();
+                showToast("Logged in successfully!");
+            }
+        });
+
+        btnLoginEmail.addEventListener('click', async () => {
+            if (useFirebase && auth) {
+                try {
+                    await signInAnonymously(auth);
+                    hideAuthModal();
+                    executePendingAction();
+                } catch (e) {
+                    console.error("Login failed", e);
+                }
+            } else {
+                currentUser = { uid: 'mock-user-123' };
+                hideAuthModal();
+                executePendingAction();
+                showToast("Logged in successfully!");
+            }
+        });
+
+        // --- STORAGE ---
+        async function saveData() {
+            if (useFirebase && currentUser) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'mindful_data', 'main');
+                    await setDoc(docRef, appData);
+                } catch(e) {
+                    console.error("Firestore save error", e);
+                }
+            }
+        }
+
+        async function loadData() {
+            if (useFirebase && currentUser) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'mindful_data', 'main');
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        appData = docSnap.data();
+                        if(!appData.sessions) appData.sessions = [];
+                        renderCalendarAndStats();
+                    }
+                } catch(e) {
+                    console.error("Firestore load error", e);
+                }
+            }
+        }
+
+        // --- NAVIGATION & UI HELPERS ---
+        const navTimer = document.getElementById('nav-timer');
+        const navStats = document.getElementById('nav-stats');
+        const viewTimer = document.getElementById('view-timer');
+        const viewStats = document.getElementById('view-stats');
+
+        navTimer.addEventListener('click', () => {
+            navStats.classList.remove('text-emerald-800', 'border-b-2', 'border-emerald-500');
+            navStats.classList.add('text-slate-500');
+            navTimer.classList.remove('text-slate-500');
+            navTimer.classList.add('text-emerald-800', 'border-b-2', 'border-emerald-500');
+            
+            viewStats.classList.add('hidden');
+            viewTimer.classList.remove('hidden');
+        });
+
+        navStats.addEventListener('click', () => {
+            navTimer.classList.remove('text-emerald-800', 'border-b-2', 'border-emerald-500');
+            navTimer.classList.add('text-slate-500');
+            navStats.classList.remove('text-slate-500');
+            navStats.classList.add('text-emerald-800', 'border-b-2', 'border-emerald-500');
+            
+            viewTimer.classList.add('hidden');
+            viewStats.classList.remove('hidden');
+            renderCalendarAndStats();
+        });
+
+        function displayRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            const quote = quotes[randomIndex];
+            const elQuote = document.getElementById('quote-text');
+            const elAuthor = document.getElementById('quote-author');
+            
+            elQuote.style.opacity = 0;
+            elAuthor.style.opacity = 0;
+            
+            setTimeout(() => {
+                elQuote.innerHTML = `"${quote.text}"`;
+                elAuthor.innerHTML = `&mdash; ${quote.author}`;
+                elQuote.style.opacity = 0.8;
+                elAuthor.style.opacity = 0.6;
+            }, 300);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
+        // --- CALENDAR & STATS RENDERER ---
+        function updateStreakFlame(streak) {
+            const flameIcon = document.getElementById('streak-flame-icon');
+            const particleContainer = document.getElementById('flame-particles');
+            if (!flameIcon || !particleContainer) return;
+            
+            // Reset classes
+            flameIcon.className = "ph-fill ph-fire text-3xl relative z-10 transition-all duration-700";
+            particleContainer.innerHTML = ''; // Clear particles
+            
+            if (streak === 0) {
+                flameIcon.classList.add('text-slate-300', 'scale-90');
+                flameIcon.style.filter = 'none';
+                return;
+            }
+            
+            // 10 Colors sequence for 365 days gamification
+            const colors = [
+                'text-yellow-400', 'text-emerald-400', 'text-green-500', 
+                'text-sky-300', 'text-blue-500', 'text-blue-800', 
+                'text-orange-300', 'text-orange-600', 'text-red-600', 'text-pink-500'
+            ];
+            const shadowHex = [
+                '#facc15', '#34d399', '#22c55e', 
+                '#7dd3fc', '#3b82f6', '#1e40af', 
+                '#fdba74', '#ea580c', '#dc2626', '#ec4899'
+            ];
+            
+            // 4 Days per color cycle
+            const cycleDay = streak - 1;
+            const colorIndex = Math.floor(cycleDay / 4) % colors.length;
+            const phase = (cycleDay % 4) + 1; // 1 (low), 2 (glowing), 3 (shiny), 4 (fierce)
+            
+            const activeColorClass = colors[colorIndex];
+            const activeShadow = shadowHex[colorIndex];
+            
+            flameIcon.classList.add(...activeColorClass.split(' '));
+            
+            // Apply intensity based on phase
+            if (phase === 1) {
+                flameIcon.classList.add('scale-90', 'animate-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 4px ${activeShadow})`;
+            } else if (phase === 2) {
+                flameIcon.classList.add('scale-100', 'animate-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 10px ${activeShadow})`;
+            } else if (phase === 3) {
+                flameIcon.classList.add('scale-110', 'animate-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 16px ${activeShadow})`;
+                createParticles(particleContainer, activeShadow, 4);
+            } else if (phase === 4) {
+                flameIcon.classList.add('scale-125', 'fierce-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 24px ${activeShadow})`;
+                createParticles(particleContainer, activeShadow, 8);
+            }
+        }
+
+        function createParticles(container, color, count) {
+            for(let i=0; i<count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.backgroundColor = color;
+                const size = Math.random() * 4 + 3; // 3-7px
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${Math.random() * 80 + 10}%`; // center-ish
+                p.style.bottom = '10%';
+                p.style.animationDelay = `${Math.random() * 0.8}s`;
+                p.style.animationDuration = `${Math.random() * 0.5 + 0.8}s`;
+                container.appendChild(p);
+            }
+        }
+
+        function renderCalendarAndStats() {
+            const sessions = appData.sessions;
+            
+            // 1. Calculate Stats
+            let totalSec = 0;
+            const daysMeditated = new Set();
+            
+            sessions.forEach(s => {
+                totalSec += s.durationSec;
+                const dateStr = new Date(s.date).toDateString();
+                daysMeditated.add(dateStr);
+            });
+
+            const hours = Math.floor(totalSec / 3600);
+            const mins = Math.floor((totalSec % 3600) / 60);
+            
+            document.getElementById('stat-total-hours').textContent = `${hours}h ${mins}m`;
+            document.getElementById('stat-total-sessions').textContent = sessions.length;
+            
+            // Simple Streak Calc
+            let streak = 0;
+            let currentDay = new Date();
+            currentDay.setHours(0,0,0,0);
+            
+            // Check today first
+            if (daysMeditated.has(currentDay.toDateString())) {
+                streak = 1;
+                let checkDay = new Date(currentDay);
+                checkDay.setDate(checkDay.getDate() - 1);
+                while(daysMeditated.has(checkDay.toDateString())) {
+                    streak++;
+                    checkDay.setDate(checkDay.getDate() - 1);
+                }
+            } else {
+                // Check if streak ended yesterday
+                let yesterday = new Date(currentDay);
+                yesterday.setDate(yesterday.getDate() - 1);
+                if(daysMeditated.has(yesterday.toDateString())) {
+                    streak = 1;
+                    let checkDay = new Date(yesterday);
+                    checkDay.setDate(checkDay.getDate() - 1);
+                    while(daysMeditated.has(checkDay.toDateString())) {
+                        streak++;
+                        checkDay.setDate(checkDay.getDate() - 1);
+                    }
+                }
+            }
+            document.getElementById('stat-streak').textContent = `${streak} days`;
+            updateStreakFlame(streak);
+
+            // 2. Render Calendar (Last 14 days)
+            const calGrid = document.getElementById('calendar-grid');
+            calGrid.innerHTML = '';
+            
+            // Header
+            const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            days.forEach(d => {
+                calGrid.innerHTML += `<div class="text-slate-400 font-bold mb-2">${d}</div>`;
+            });
+
+            // Fill days (get start day of week for 2 weeks ago)
+            const today = new Date();
+            const startRenderDate = new Date(today);
+            startRenderDate.setDate(today.getDate() - 13);
+            
+            // Adjust to sunday
+            while (startRenderDate.getDay() !== 0) {
+                startRenderDate.setDate(startRenderDate.getDate() - 1);
+            }
+
+            for (let i = 0; i < 21; i++) { // 3 weeks total view
+                const loopDate = new Date(startRenderDate);
+                loopDate.setDate(loopDate.getDate() + i);
+                const loopDateStr = loopDate.toDateString();
+                
+                const isToday = loopDate.toDateString() === today.toDateString();
+                const hasSession = daysMeditated.has(loopDateStr);
+                const isFuture = loopDate > today;
+                
+                let classes = "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mx-auto transition-all ";
+                
+                if (hasSession) {
+                    classes += "bg-emerald-500 text-white font-bold shadow-md";
+                } else if (isToday) {
+                    classes += "border-2 border-emerald-400 text-emerald-800 font-bold bg-emerald-50";
+                } else if (isFuture) {
+                    classes += "text-slate-300";
+                } else {
+                    classes += "text-slate-500 bg-slate-50 hover:bg-slate-100";
+                }
+
+                calGrid.innerHTML += `<div class="${classes}">${loopDate.getDate()}</div>`;
+            }
+
+            // 3. Render Journal
+            const journalList = document.getElementById('journal-list');
+            journalList.innerHTML = '';
+            
+            const reversedSessions = [...sessions].reverse(); // newest first
+            const withNotes = reversedSessions.filter(s => s.note && s.note.trim() !== '' || s.mood);
+            
+            if (withNotes.length === 0) {
+                journalList.innerHTML = '<div class="text-center text-slate-400 mt-10 italic">No reflections yet.</div>';
+            } else {
+                withNotes.forEach(s => {
+                    const d = new Date(s.date);
+                    const dateFmt = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    const moodEmoji = s.mood === 'Peaceful' ? '☀️' : s.mood === 'Struggled' ? '☁️' : '🌤️';
+                    const min = Math.round(s.durationSec / 60);
+                    
+                    journalList.innerHTML += `
+                        <div class="bg-white/60 rounded-xl p-3 border border-slate-100 shadow-sm text-left">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-slate-500">${dateFmt} • ${min}m</span>
+                                <span title="${s.mood}">${moodEmoji}</span>
+                            </div>
+                            ${s.note ? `<p class="text-sm text-slate-700 italic">"${s.note}"</p>` : ''}
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Init
+        window.addEventListener('load', initApp);
+
+    </script>
+</body>
+</html>
