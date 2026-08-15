@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mindful Moments - Meditation Timer</title>
+    <title>Mindful Moments - Meditation Timer & Journal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tone.js for ambient sounds -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <!-- Phosphor Icons for simple clean icons -->
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
-    <!-- Google Sans Font (via getbutterfly trick / Fontsource CDN) -->
+    <!-- Google Sans & Jakarta Fonts -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Google+Sans:wght@400;500;700&display=swap');
         
-        /* Fallback if Google Fonts API fails for Google Sans */
         @font-face {
             font-family: 'Google Sans Alternative';
             font-style: normal;
@@ -24,26 +23,24 @@
         }
 
         body {
-            /* Try Google's API first, then fontsource, then standard sans-serif */
-            font-family: 'Google Sans', 'Google Sans Alternative', sans-serif;
-            /* Mild color psychology: Soft pale pink background */
+            font-family: 'Plus Jakarta Sans', 'Google Sans', 'Google Sans Alternative', system-ui, -apple-system, sans-serif;
             background-color: #fdf5f6; /* Pale pink */
-            color: #334155; /* Soft dark gray for text readability */
+            color: #334155;
             margin: 0;
             padding: 0;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
             transition: background-color 0.5s ease;
         }
 
-        /* Custom Scrollbar for notes/calendar */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.4);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb {
@@ -56,35 +53,36 @@
 
         /* Pulsing animation for active timer */
         @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(134, 239, 172, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(134, 239, 172, 0); }
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 25px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         
         .timer-active .timer-circle {
             animation: pulse-ring 4s infinite ease-in-out;
-            background-color: #dcfce7; /* Soft green */
-            border-color: #86efac;
+            background-color: #ecfdf5;
+            border-color: #a7f3d0;
         }
 
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
         /* Flame and Particle animations */
         @keyframes flame-flicker {
             0%, 100% { opacity: 1; transform: scale(1) translateY(0); filter: brightness(1); }
-            50% { opacity: 0.85; transform: scale(1.05) translateY(-2px); filter: brightness(1.2); }
+            50% { opacity: 0.85; transform: scale(1.06) translateY(-2px); filter: brightness(1.2); }
         }
         @keyframes fierce-flicker {
-            0%, 100% { opacity: 1; transform: scale(1) translateY(0) rotate(-2deg); filter: brightness(1.2); }
-            50% { opacity: 0.9; transform: scale(1.15) translateY(-4px) rotate(2deg); filter: brightness(1.4); }
+            0%, 100% { opacity: 1; transform: scale(1) translateY(0) rotate(-2deg); filter: brightness(1.25); }
+            50% { opacity: 0.9; transform: scale(1.15) translateY(-4px) rotate(2deg); filter: brightness(1.45); }
         }
         @keyframes float-up-fade {
-            0% { transform: translateY(0) scale(1); opacity: 0.8; }
-            100% { transform: translateY(-30px) scale(0); opacity: 0; }
+            0% { transform: translateY(0) scale(1); opacity: 0.85; }
+            100% { transform: translateY(-32px) scale(0); opacity: 0; }
         }
         .animate-flame {
             animation: flame-flicker 2s infinite ease-in-out;
@@ -99,25 +97,65 @@
         .particle {
             position: absolute;
             border-radius: 50%;
-            animation: float-up-fade 1s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            animation: float-up-fade 1.2s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
             pointer-events: none;
         }
 
-        /* Hide elements utility */
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased select-none">
 
     <!-- Navigation / Header -->
-    <header class="w-full p-4 md:p-6 flex justify-between items-center z-10 glass-panel shadow-sm">
-        <div class="flex items-center gap-2 text-emerald-700">
-            <i class="ph ph-flower-lotus text-3xl"></i>
-            <h1 class="text-xl md:text-2xl font-bold tracking-tight">Mindful Moments</h1>
+    <header class="w-full px-4 py-3 md:px-8 md:py-4 flex justify-between items-center z-20 glass-panel shadow-sm sticky top-0">
+        <div class="flex items-center gap-3 text-emerald-800">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-inner">
+                <i class="ph-fill ph-flower-lotus text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg md:text-xl font-bold tracking-tight text-emerald-950 leading-tight">Mindful Moments</h1>
+                <p class="text-[11px] text-emerald-600 font-medium hidden sm:block">Meditation & Soulful Journal</p>
+            </div>
         </div>
-        <div class="flex gap-4">
-            <button id="nav-timer" class="text-emerald-800 hover:text-emerald-600 font-medium transition-colors border-b-2 border-emerald-500 pb-1">Timer</button>
-            <button id="nav-stats" class="text-slate-500 hover:text-emerald-600 font-medium transition-colors pb-1">Journey</button>
+
+        <!-- Center Nav -->
+        <div class="flex items-center bg-slate-200/50 p-1 rounded-full text-xs md:text-sm font-semibold">
+            <button id="nav-timer" class="px-4 py-1.5 rounded-full bg-white text-emerald-800 shadow-sm transition-all duration-200">Timer</button>
+            <button id="nav-stats" class="px-4 py-1.5 rounded-full text-slate-600 hover:text-emerald-700 transition-all duration-200">Journey</button>
+        </div>
+
+        <!-- User / Auth Profile Area -->
+        <div class="flex items-center gap-2">
+            <!-- Cloud Sync Status Pill -->
+            <div id="sync-status" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60" title="Cloud Sync Active">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="sync-status-text">Cloud Active</span>
+            </div>
+
+            <!-- Firebase Setup Pill -->
+            <button id="btn-config-settings" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-emerald-700 hover:bg-white transition-all flex items-center gap-1" title="Database Settings">
+                <i class="ph ph-gear text-sm"></i>
+                <span class="hidden lg:inline">DB Setup</span>
+            </button>
+
+            <!-- User Info / Auth Button -->
+            <div id="user-logged-out-view">
+                <button id="btn-header-login" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3.5 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                    <i class="ph-bold ph-sign-in text-base"></i>
+                    <span>Sign In</span>
+                </button>
+            </div>
+
+            <div id="user-logged-in-view" class="hidden flex items-center gap-2">
+                <div class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full bg-white/80 border border-slate-200 shadow-sm">
+                    <img id="user-avatar" class="w-7 h-7 rounded-full object-cover bg-emerald-100 hidden" alt="User avatar">
+                    <div id="user-avatar-fallback" class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center">U</div>
+                    <span id="user-display-name" class="text-xs font-medium text-slate-700 max-w-[100px] truncate hidden sm:inline">User</span>
+                    <button id="btn-logout" class="text-slate-400 hover:text-rose-600 p-1 rounded-full hover:bg-slate-100 transition-colors" title="Log Out">
+                        <i class="ph-bold ph-sign-out text-base"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -125,98 +163,128 @@
     <main class="flex-grow flex flex-col items-center justify-center p-4 w-full max-w-4xl mx-auto relative h-full">
 
         <!-- VIEW: TIMER -->
-        <section id="view-timer" class="w-full flex flex-col items-center justify-center h-full transition-opacity duration-300">
+        <section id="view-timer" class="w-full flex flex-col items-center justify-center h-full transition-opacity duration-300 py-6">
             
             <!-- Daily Quote Area -->
-            <div class="mb-12 text-center max-w-2xl px-4 animate-fade-in">
-                <p id="quote-text" class="text-lg md:text-xl font-medium text-emerald-900 leading-relaxed italic opacity-80 transition-opacity duration-500"></p>
-                <p id="quote-author" class="text-sm mt-3 text-emerald-700 font-semibold opacity-60"></p>
+            <div class="mb-8 md:mb-12 text-center max-w-2xl px-4 animate-fade-in">
+                <p id="quote-text" class="text-base md:text-xl font-medium text-emerald-950 leading-relaxed italic opacity-85 transition-opacity duration-500">"Peace comes from within. Do not seek it without."</p>
+                <p id="quote-author" class="text-xs md:text-sm mt-3 text-emerald-700 font-semibold opacity-70">&mdash; Buddha</p>
             </div>
 
             <!-- Timer Display -->
             <div class="relative flex flex-col items-center mb-8">
                 <div class="timer-circle w-64 h-64 md:w-80 md:h-80 rounded-full border-4 border-emerald-100 bg-white shadow-xl flex flex-col items-center justify-center transition-all duration-1000 ease-in-out relative z-10">
-                    <span id="time-display" class="text-6xl md:text-7xl font-bold text-emerald-800 tabular-nums tracking-tighter">10:00</span>
-                    <span id="timer-status" class="text-emerald-600/70 mt-2 text-sm font-medium tracking-widest uppercase">Ready</span>
+                    <span id="time-display" class="text-6xl md:text-7xl font-bold text-emerald-900 tabular-nums tracking-tighter">10:00</span>
+                    <span id="timer-status" class="text-emerald-600/80 mt-2 text-xs md:text-sm font-semibold tracking-widest uppercase">Ready</span>
                 </div>
             </div>
 
             <!-- Timer Controls -->
-            <div class="flex flex-col items-center w-full max-w-md gap-6">
-                <!-- Duration Slider (hidden when active) -->
-                <div id="duration-selector" class="w-full flex flex-col items-center gap-2">
-                    <div class="flex justify-between w-full text-xs text-slate-500 font-medium px-2">
+            <div class="flex flex-col items-center w-full max-w-md gap-5">
+                <!-- Duration Slider -->
+                <div id="duration-selector" class="w-full flex flex-col items-center gap-2 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="flex justify-between w-full text-xs text-slate-500 font-medium px-1">
                         <span>1 min</span>
                         <span>60 min</span>
                     </div>
-                    <input type="range" id="duration-slider" min="1" max="60" value="10" class="w-full h-2 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
-                    <p class="text-sm text-emerald-700 mt-1 font-medium"><span id="slider-value">10</span> minutes</p>
+                    <input type="range" id="duration-slider" min="1" max="60" value="10" class="w-full h-2.5 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    <p class="text-sm text-emerald-800 font-semibold"><span id="slider-value" class="text-base font-bold">10</span> minutes</p>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex gap-4">
-                    <button id="btn-start" class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
-                        <i class="ph ph-play-circle text-2xl"></i> Start
+                <div class="flex gap-3">
+                    <button id="btn-start" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-8 py-3.5 rounded-full font-bold text-lg shadow-lg hover:shadow-emerald-200 transition-all transform flex items-center gap-2">
+                        <i class="ph-fill ph-play text-2xl"></i> <span>Start Session</span>
                     </button>
-                    <button id="btn-pause" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-all flex items-center gap-2">
-                        <i class="ph ph-pause-circle text-2xl"></i> Pause
+                    <button id="btn-pause" class="hidden bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-7 py-3 rounded-full font-bold text-lg shadow-lg transition-all flex items-center gap-2">
+                        <i class="ph-fill ph-pause text-2xl"></i> <span>Pause</span>
                     </button>
-                    <button id="btn-stop" class="hidden bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-full font-bold shadow-lg transition-all flex items-center gap-2">
-                        <i class="ph ph-stop-circle text-2xl"></i> End
+                    <button id="btn-stop" class="hidden bg-rose-500 hover:bg-rose-600 active:scale-95 text-white px-6 py-3 rounded-full font-bold shadow-lg transition-all flex items-center gap-2">
+                        <i class="ph-fill ph-stop text-2xl"></i> <span>End</span>
                     </button>
                 </div>
                 
-                <div class="flex items-center gap-2 mt-2">
-                    <button id="btn-sound-toggle" class="text-slate-400 hover:text-emerald-600 transition-colors p-2 rounded-full hover:bg-emerald-50">
-                        <i id="sound-icon" class="ph-fill ph-speaker-high text-xl"></i>
+                <div class="flex items-center gap-2 mt-1">
+                    <button id="btn-sound-toggle" class="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors p-2 rounded-full">
+                        <i id="sound-icon" class="ph-fill ph-speaker-high text-lg"></i>
                     </button>
-                    <span class="text-xs text-slate-500">Spiritual Sounds</span>
+                    <span class="text-xs text-slate-600 font-medium">Ambient Singing Bowl & Bells</span>
                 </div>
             </div>
         </section>
 
         <!-- VIEW: STATS & CALENDAR -->
-        <section id="view-stats" class="hidden w-full flex-col h-full overflow-y-auto pb-10 pt-4 px-4 transition-opacity duration-300">
-            <h2 class="text-2xl font-bold text-emerald-900 mb-6 text-center">Your Journey</h2>
+        <section id="view-stats" class="hidden w-full flex-col h-full overflow-y-auto pb-10 pt-4 px-2 md:px-4 transition-opacity duration-300">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
+                <div>
+                    <h2 class="text-2xl font-bold text-emerald-950">Your Journey</h2>
+                    <p class="text-xs text-slate-500">Track your daily mindfulness and reflections</p>
+                </div>
+                <!-- Action Tools -->
+                <div class="flex items-center gap-2">
+                    <button id="btn-export-csv" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors flex items-center gap-1.5 shadow-sm">
+                        <i class="ph-bold ph-file-csv text-emerald-600 text-base"></i>
+                        <span>Export CSV / Excel</span>
+                    </button>
+                </div>
+            </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <!-- Summary Cards -->
+                <!-- Total Time Card -->
                 <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm">
-                    <i class="ph-fill ph-hourglass-high text-emerald-500 text-3xl mb-2"></i>
-                    <p class="text-slate-500 text-sm font-medium">Total Time</p>
-                    <p id="stat-total-hours" class="text-2xl font-bold text-emerald-800">0 h 0 m</p>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2">
+                        <i class="ph-fill ph-hourglass-high text-2xl"></i>
+                    </div>
+                    <p class="text-slate-500 text-xs font-medium uppercase tracking-wider">Total Time</p>
+                    <p id="stat-total-hours" class="text-2xl font-bold text-emerald-900 mt-1">0 h 0 m</p>
                 </div>
+
+                <!-- Sessions Card -->
                 <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm">
-                    <i class="ph-fill ph-calendar-check text-sky-500 text-3xl mb-2"></i>
-                    <p class="text-slate-500 text-sm font-medium">Sessions</p>
-                    <p id="stat-total-sessions" class="text-2xl font-bold text-emerald-800">0</p>
+                    <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center mb-2">
+                        <i class="ph-fill ph-calendar-check text-2xl"></i>
+                    </div>
+                    <p class="text-slate-500 text-xs font-medium uppercase tracking-wider">Sessions</p>
+                    <p id="stat-total-sessions" class="text-2xl font-bold text-emerald-900 mt-1">0</p>
                 </div>
+
+                <!-- Current Streak Card -->
                 <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm">
                     <div class="relative flex items-center justify-center h-12 w-12 mb-2">
                         <div id="flame-particles" class="absolute inset-0 pointer-events-none"></div>
-                        <i id="streak-flame-icon" class="ph-fill ph-fire text-3xl animate-flame relative z-10"></i>
+                        <i id="streak-flame-icon" class="ph-fill ph-fire text-3xl animate-flame relative z-10 text-amber-500"></i>
                     </div>
-                    <p class="text-slate-500 text-sm font-medium">Current Streak</p>
-                    <p id="stat-streak" class="text-2xl font-bold text-emerald-800">0 days</p>
+                    <p class="text-slate-500 text-xs font-medium uppercase tracking-wider">Current Streak</p>
+                    <p id="stat-streak" class="text-2xl font-bold text-emerald-900 mt-1">0 days</p>
                 </div>
             </div>
 
             <!-- Calendar & History -->
             <div class="flex flex-col md:flex-row gap-6 w-full">
-                <!-- Simple Calendar (Recent Days) -->
-                <div class="glass-panel rounded-2xl p-6 md:w-1/2 shadow-sm">
-                    <h3 class="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2"><i class="ph ph-calendar"></i> Recent Activity</h3>
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm">
-                        <!-- Calendar headers and days injected via JS -->
+                <!-- Calendar (Recent Days) -->
+                <div class="glass-panel rounded-2xl p-6 md:w-1/2 shadow-sm flex flex-col">
+                    <h3 class="text-base font-bold text-emerald-950 mb-4 flex items-center gap-2">
+                        <i class="ph-bold ph-calendar text-emerald-600"></i> Recent Activity (3 Weeks)
+                    </h3>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm my-auto">
+                        <!-- Days injected via JS -->
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Completed</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full border border-emerald-400 bg-emerald-50"></span> Today</span>
                     </div>
                 </div>
 
                 <!-- Journal / Notes List -->
-                <div class="glass-panel rounded-2xl p-6 md:w-1/2 shadow-sm flex flex-col h-80">
-                    <h3 class="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2"><i class="ph ph-notebook"></i> Reflection Journal</h3>
-                    <div id="journal-list" class="flex-grow overflow-y-auto pr-2 space-y-3">
-                        <!-- Journal entries injected via JS -->
-                        <div class="text-center text-slate-400 mt-10 italic">No entries yet. Complete a session to reflect.</div>
+                <div class="glass-panel rounded-2xl p-6 md:w-1/2 shadow-sm flex flex-col h-96">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-emerald-950 flex items-center gap-2">
+                            <i class="ph-bold ph-notebook text-emerald-600"></i> Reflection Journal
+                        </h3>
+                        <span id="journal-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">0 notes</span>
+                    </div>
+                    <div id="journal-list" class="flex-grow overflow-y-auto pr-1 space-y-3">
+                        <div class="text-center text-slate-400 mt-16 italic text-sm">No entries yet. Complete a session to reflect.</div>
                     </div>
                 </div>
             </div>
@@ -224,107 +292,248 @@
 
     </main>
 
-    <!-- Feedback Modal (Appears after session) -->
-    <div id="modal-feedback" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300" id="modal-feedback-content">
+    <!-- Feedback Modal (Appears after 1+ minute meditation) -->
+    <div id="modal-feedback" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300" id="modal-feedback-content">
             <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-4">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-3 shadow-inner">
                     <i class="ph-fill ph-hands-praying text-3xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-emerald-900">Session Complete</h3>
-                <p class="text-slate-500 mt-2">Take a deep breath. How was your experience?</p>
+                <h3 class="text-2xl font-bold text-emerald-950">Session Complete</h3>
+                <p class="text-slate-500 text-sm mt-1">Take a deep breath. How are you feeling right now?</p>
+                <div class="mt-2 inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 font-semibold text-xs" id="feedback-duration-badge">
+                    10 minutes
+                </div>
             </div>
             
-            <div class="flex justify-center gap-4 mb-6">
-                <button class="mood-btn text-4xl grayscale hover:grayscale-0 hover:scale-110 transition-all" data-mood="Struggled">☁️</button>
-                <button class="mood-btn text-4xl grayscale hover:grayscale-0 hover:scale-110 transition-all" data-mood="Neutral">🌤️</button>
-                <button class="mood-btn text-4xl grayscale hover:grayscale-0 hover:scale-110 transition-all" data-mood="Peaceful">☀️</button>
+            <div class="flex justify-center gap-6 mb-6">
+                <button class="mood-btn flex flex-col items-center gap-1 group" data-mood="Struggled">
+                    <span class="text-4xl grayscale group-hover:grayscale-0 transition-transform group-hover:scale-125 duration-200">☁️</span>
+                    <span class="text-[11px] font-medium text-slate-500">Restless</span>
+                </button>
+                <button class="mood-btn flex flex-col items-center gap-1 group" data-mood="Neutral">
+                    <span class="text-4xl grayscale group-hover:grayscale-0 transition-transform group-hover:scale-125 duration-200">🌤️</span>
+                    <span class="text-[11px] font-medium text-slate-500">Centered</span>
+                </button>
+                <button class="mood-btn flex flex-col items-center gap-1 group" data-mood="Peaceful">
+                    <span class="text-4xl grayscale group-hover:grayscale-0 transition-transform group-hover:scale-125 duration-200">☀️</span>
+                    <span class="text-[11px] font-medium text-slate-500">Peaceful</span>
+                </button>
             </div>
 
-            <textarea id="feedback-note" class="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 resize-none h-28 mb-4" placeholder="Jot down any thoughts, feelings, or distractions..."></textarea>
+            <textarea id="feedback-note" class="w-full border border-slate-200 rounded-2xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 resize-none h-28 mb-4 placeholder:text-slate-400" placeholder="Jot down any thoughts, sensations, or insights from this session..."></textarea>
             
-            <button id="btn-save-feedback" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors disabled:opacity-50">
-                Save Reflection
+            <button id="btn-save-feedback" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-3.5 px-4 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2">
+                <i class="ph-bold ph-floppy-disk text-lg"></i>
+                <span>Save to My Journey</span>
             </button>
-            <button id="btn-skip-feedback" class="w-full mt-2 text-slate-500 hover:text-slate-700 py-2 text-sm font-medium">
-                Skip for now
+            <button id="btn-skip-feedback" class="w-full mt-2 text-slate-500 hover:text-slate-700 py-2 text-xs font-semibold">
+                Skip note (save time only)
             </button>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 opacity-0 translate-y-10 pointer-events-none z-50 flex items-center gap-2">
-        <i class="ph ph-info"></i> <span id="toast-msg">Notification</span>
-    </div>
-
-    <!-- Auth Modal -->
-    <div id="modal-auth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300" id="modal-auth-content">
+    <!-- Auth Modal (Google & Email/Password Sign Up / Sign In) -->
+    <div id="modal-auth" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300" id="modal-auth-content">
             <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 mb-4 shadow-inner">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 mb-3 shadow-inner">
                     <i class="ph-fill ph-user-circle text-4xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-emerald-900">Welcome</h3>
-                <p class="text-slate-500 mt-2 text-sm">Login or create an account to save your reflections and track your mindful moments.</p>
+                <h3 class="text-2xl font-bold text-emerald-950" id="auth-title">Welcome to Mindful Moments</h3>
+                <p class="text-slate-500 mt-1 text-xs" id="auth-subtitle">Create a free account or sign in to sync your reflections across all devices.</p>
+            </div>
+
+            <!-- Tab Toggle: Sign In vs Sign Up -->
+            <div class="flex p-1 bg-slate-100 rounded-xl mb-4 text-xs font-semibold">
+                <button id="auth-tab-signin" class="flex-1 py-2 rounded-lg bg-white text-emerald-900 shadow-sm transition-all">Sign In</button>
+                <button id="auth-tab-signup" class="flex-1 py-2 rounded-lg text-slate-500 hover:text-emerald-800 transition-all">Create Account</button>
             </div>
             
             <div class="flex flex-col gap-3">
-                <button id="btn-login-google" class="w-full bg-white border-2 border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 text-slate-700 font-bold py-3 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
-                    Continue with Google
+                <!-- Google Sign In -->
+                <button id="btn-login-google" class="w-full bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 text-slate-700 font-semibold py-3 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-3 active:scale-95">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>Continue with Google</span>
                 </button>
-                <div class="relative flex items-center py-2">
+
+                <div class="relative flex items-center py-1">
                     <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or</span>
+                    <span class="flex-shrink-0 mx-3 text-slate-400 text-[11px] uppercase font-semibold">Or with Email</span>
                     <div class="flex-grow border-t border-slate-200"></div>
                 </div>
+
+                <div id="auth-name-field" class="hidden">
+                    <input type="text" id="auth-name" placeholder="Your Name" class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50">
+                </div>
                 <input type="email" id="auth-email" placeholder="Email address" class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50">
-                <input type="password" id="auth-password" placeholder="Password" class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50">
-                <button id="btn-login-email" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors mt-1">
-                    Sign In / Create Account
+                <input type="password" id="auth-password" placeholder="Password (min 6 characters)" class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50">
+
+                <div id="auth-error-box" class="hidden p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                    <i class="ph ph-warning-circle text-base"></i>
+                    <span id="auth-error-msg">Error</span>
+                </div>
+
+                <button id="btn-submit-auth" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all mt-1 flex items-center justify-center gap-2">
+                    <span id="auth-submit-text">Sign In</span>
                 </button>
-                <button id="btn-cancel-auth" class="w-full mt-2 text-slate-500 hover:text-slate-700 py-2 text-sm font-medium">
+
+                <div class="flex justify-between items-center mt-1 text-xs">
+                    <button id="btn-forgot-password" class="text-slate-500 hover:text-emerald-700 transition-colors">Forgot password?</button>
+                    <button id="btn-continue-guest" class="text-slate-500 hover:text-emerald-700 transition-colors">Continue as Guest (Local)</button>
+                </div>
+
+                <button id="btn-cancel-auth" class="w-full text-slate-400 hover:text-slate-600 py-1.5 text-xs font-medium">
                     Cancel
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Free Firebase Configuration Modal -->
+    <div id="modal-config" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2 text-emerald-800">
+                    <i class="ph-fill ph-database text-2xl"></i>
+                    <h3 class="text-xl font-bold text-emerald-950">Free Cloud Database Setup</h3>
+                </div>
+                <button id="btn-close-config" class="text-slate-400 hover:text-slate-600 text-xl"><i class="ph ph-x"></i></button>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                This app uses <strong>Firebase (100% Free Tier)</strong> to authenticate users with Google & Email, and store meditation logs in Cloud Firestore without requiring any paid server.
+            </p>
+
+            <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4 mb-4 text-xs text-emerald-900 space-y-2">
+                <p class="font-bold flex items-center gap-1.5"><i class="ph ph-check-circle text-emerald-600 text-sm"></i> How to get your FREE Firebase config (2 minutes):</p>
+                <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-700 pl-1">
+                    <li>Go to <a href="https://console.firebase.google.com" target="_blank" class="text-emerald-700 font-semibold underline">Firebase Console</a> (Free).</li>
+                    <li>Click <strong>Add Project</strong> &rarr; Name it "Mindful Moments".</li>
+                    <li>Click <strong>Authentication</strong> &rarr; Get Started &rarr; Enable <strong>Google</strong> & <strong>Email/Password</strong>.</li>
+                    <li>Click <strong>Firestore Database</strong> &rarr; Create Database &rarr; Start in Test mode.</li>
+                    <li>Click Project Settings (gear icon) &rarr; General &rarr; Scroll to <strong>Your apps</strong> &rarr; Click Web (&lt;/&gt;) &rarr; Copy the <code>firebaseConfig</code> object and paste below:</li>
+                </ol>
+            </div>
+
+            <textarea id="config-json-input" class="w-full font-mono text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none h-36 mb-4 placeholder:text-slate-400" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-app.firebaseapp.com",
+  "projectId": "your-app",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "123...",
+  "appId": "1:123..."
+}'></textarea>
+
+            <div class="flex gap-2">
+                <button id="btn-save-config" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition-colors shadow-sm">
+                    Save Config & Connect
+                </button>
+                <button id="btn-reset-config" class="px-4 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors">
+                    Use Local Demo Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 translate-y-10 pointer-events-none z-50 flex items-center gap-2.5 text-xs md:text-sm font-medium border border-slate-800">
+        <i id="toast-icon" class="ph-fill ph-info text-emerald-400 text-lg"></i>
+        <span id="toast-msg">Notification</span>
+    </div>
+
+    <!-- Application Script Module -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            sendPasswordResetEmail,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Setup
-        let app, db, auth;
+        // ==========================================
+        // 1. FIREBASE INITIALIZATION & DB CONFIG
+        // ==========================================
+        
+        // Default placeholder config
+        const DEFAULT_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDEMO-KEY-REPLACE-WITH-YOURS",
+            authDomain: "mindful-moments-demo.firebaseapp.com",
+            projectId: "mindful-moments-demo",
+            storageBucket: "mindful-moments-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+
+        let app = null;
+        let auth = null;
+        let db = null;
         let currentUser = null;
-        let useFirebase = false;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'meditation-app-default';
+        let isFirebaseConnected = false;
 
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                useFirebase = true;
-                
-                onAuthStateChanged(auth, (user) => {
-                    currentUser = user;
-                    if (user) {
-                        loadData(); // reload data from firestore
-                    }
-                });
-
-                if (typeof __initial_auth_token !== 'undefined') {
-                    signInWithCustomToken(auth, __initial_auth_token).catch(console.error);
-                }
-            }
-        } catch (e) {
-            console.warn("Firebase initialization skipped. Using memory mode.");
+        function getSavedFirebaseConfig() {
+            try {
+                const stored = localStorage.getItem('mm_custom_firebase_config');
+                if (stored) return JSON.parse(stored);
+            } catch (e) {}
+            return DEFAULT_FIREBASE_CONFIG;
         }
 
-        // --- DATA: 50 Mindfulness Quotes ---
+        function initFirebase() {
+            const config = getSavedFirebaseConfig();
+            try {
+                if (config && config.apiKey && !config.apiKey.includes('DEMO-KEY')) {
+                    if (getApps().length === 0) {
+                        app = initializeApp(config);
+                    } else {
+                        app = getApps()[0];
+                    }
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    isFirebaseConnected = true;
+
+                    document.getElementById('sync-status').classList.remove('hidden');
+                    document.getElementById('sync-status-text').textContent = 'Cloud Sync Connected';
+
+                    onAuthStateChanged(auth, async (user) => {
+                        currentUser = user;
+                        updateUserUI(user);
+                        if (user) {
+                            await loadUserDataFromCloud();
+                        } else {
+                            loadLocalData();
+                        }
+                    });
+                    return true;
+                }
+            } catch (err) {
+                console.warn("Firebase waiting for valid credentials. Falling back to local storage.", err);
+            }
+
+            isFirebaseConnected = false;
+            document.getElementById('sync-status').classList.add('hidden');
+            loadLocalData();
+            return false;
+        }
+
+        // --- DATA: Mindfulness Quotes ---
         const quotes = [
             { text: "Peace comes from within. Do not seek it without.", author: "Buddha" },
             { text: "You can't stop the waves, but you can learn to surf.", author: "Jon Kabat-Zinn" },
@@ -378,22 +587,24 @@
             { text: "Mindfulness is life. Whenever we don't have mindfulness, when we are heedless, it's as if we are dead.", author: "Ajahn Chah" }
         ];
 
-        // --- STATE ---
+        // --- APP STATE ---
         let timerInterval = null;
-        let timeLeft = 600; // default 10 mins in seconds
-        let totalSessionTime = 600; 
+        let timeLeft = 600; 
         let isRunning = false;
         let isSoundEnabled = true;
-        let currentSessionStartTime = null;
-        
+        let selectedMood = 'Neutral';
+        let authMode = 'signin';
+        let pendingPostAuthAction = null;
+        let pendingSessionData = null;
+
         // Tone.js Synth nodes
         let droneSynth = null;
         let bellSynth = null;
         let isAudioInitialized = false;
 
-        // Data Storage Structure
+        // Data Storage
         let appData = {
-            sessions: [], // { date: string, durationSec: number, mood: string, note: string }
+            sessions: [],
             lastLogin: null
         };
 
@@ -406,92 +617,135 @@
         const btnStop = document.getElementById('btn-stop');
         const elDurationSelector = document.getElementById('duration-selector');
         const timerStatus = document.getElementById('timer-status');
-        const timerSection = document.getElementById('view-timer');
-        
+        const viewTimer = document.getElementById('view-timer');
+        const viewStats = document.getElementById('view-stats');
+        const navTimer = document.getElementById('nav-timer');
+        const navStats = document.getElementById('nav-stats');
+
+        // Modal Feedback
         const modalFeedback = document.getElementById('modal-feedback');
         const modalFeedbackContent = document.getElementById('modal-feedback-content');
         const btnSaveFeedback = document.getElementById('btn-save-feedback');
         const btnSkipFeedback = document.getElementById('btn-skip-feedback');
         const feedbackNote = document.getElementById('feedback-note');
-        let selectedMood = null;
+        const feedbackDurationBadge = document.getElementById('feedback-duration-badge');
 
-        // Auth DOM Elements
+        // Modal Auth
         const modalAuth = document.getElementById('modal-auth');
         const modalAuthContent = document.getElementById('modal-auth-content');
+        const authTabSignin = document.getElementById('auth-tab-signin');
+        const authTabSignup = document.getElementById('auth-tab-signup');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const authNameField = document.getElementById('auth-name-field');
+        const authName = document.getElementById('auth-name');
+        const authEmail = document.getElementById('auth-email');
+        const authPassword = document.getElementById('auth-password');
+        const authErrorBox = document.getElementById('auth-error-box');
+        const authErrorMsg = document.getElementById('auth-error-msg');
+        const authSubmitText = document.getElementById('auth-submit-text');
+        const btnSubmitAuth = document.getElementById('btn-submit-auth');
         const btnLoginGoogle = document.getElementById('btn-login-google');
-        const btnLoginEmail = document.getElementById('btn-login-email');
+        const btnForgotPassword = document.getElementById('btn-forgot-password');
+        const btnContinueGuest = document.getElementById('btn-continue-guest');
         const btnCancelAuth = document.getElementById('btn-cancel-auth');
 
-        // --- INITIALIZATION ---
+        // Header User
+        const userLoggedOutView = document.getElementById('user-logged-out-view');
+        const userLoggedInView = document.getElementById('user-logged-in-view');
+        const btnHeaderLogin = document.getElementById('btn-header-login');
+        const userAvatar = document.getElementById('user-avatar');
+        const userAvatarFallback = document.getElementById('user-avatar-fallback');
+        const userDisplayName = document.getElementById('user-display-name');
+        const btnLogout = document.getElementById('btn-logout');
+
+        // Config Modal
+        const modalConfig = document.getElementById('modal-config');
+        const btnConfigSettings = document.getElementById('btn-config-settings');
+        const btnCloseConfig = document.getElementById('btn-close-config');
+        const configJsonInput = document.getElementById('config-json-input');
+        const btnSaveConfig = document.getElementById('btn-save-config');
+        const btnResetConfig = document.getElementById('btn-reset-config');
+        const btnExportCsv = document.getElementById('btn-export-csv');
+
+        // ==========================================
+        // 2. INITIALIZATION
+        // ==========================================
         function initApp() {
-            loadData();
+            initFirebase();
             displayRandomQuote();
             updateTimeDisplay(elDurationSlider.value * 60);
             renderCalendarAndStats();
-            
-            // Check streak
-            const today = new Date().toDateString();
-            if (appData.lastLogin !== today) {
-                appData.lastLogin = today;
-                saveData();
+
+            const saved = localStorage.getItem('mm_custom_firebase_config');
+            if (saved) {
+                configJsonInput.value = saved;
             }
         }
 
-        // --- AUDIO (Tone.js) ---
+        // ==========================================
+        // 3. AUDIO ENGINE (Tone.js)
+        // ==========================================
         async function initAudio() {
             if (isAudioInitialized) return;
-            
-            await Tone.start();
-            
-            // Soft Drone for background
-            droneSynth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: "sine" },
-                envelope: { attack: 2, decay: 1, sustain: 1, release: 4 },
-                volume: -20
-            }).toDestination();
+            try {
+                await Tone.start();
+                
+                const reverb = new Tone.Reverb({ decay: 5, wet: 0.5 }).toDestination();
+                await reverb.generate();
 
-            // Add some chorus and reverb for spirituality
-            const chorus = new Tone.Chorus(4, 2.5, 0.5).toDestination().start();
-            const reverb = new Tone.Reverb({ decay: 5, wet: 0.5 }).toDestination();
-            droneSynth.connect(chorus);
-            droneSynth.connect(reverb);
+                const chorus = new Tone.Chorus(3.5, 2.5, 0.5).toDestination().start();
 
-            // Bell for start/end
-            bellSynth = new Tone.MetalSynth({
-                frequency: 400,
-                envelope: { attack: 0.01, decay: 4, release: 2 },
-                harmonicity: 3.1,
-                modulationIndex: 32,
-                resonance: 4000,
-                octaves: 1.5,
-                volume: -10
-            }).connect(reverb).toDestination();
+                droneSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 2, decay: 1, sustain: 1, release: 3 },
+                    volume: -22
+                }).connect(chorus).connect(reverb);
 
-            isAudioInitialized = true;
+                bellSynth = new Tone.MetalSynth({
+                    frequency: 380,
+                    envelope: { attack: 0.005, decay: 3.5, release: 2 },
+                    harmonicity: 3.1,
+                    modulationIndex: 28,
+                    resonance: 4000,
+                    octaves: 1.5,
+                    volume: -8
+                }).connect(reverb).toDestination();
+
+                isAudioInitialized = true;
+            } catch (e) {
+                console.warn("Audio init deferred", e);
+            }
         }
 
         function playStartBell() {
             if (!isSoundEnabled || !bellSynth) return;
-            bellSynth.triggerAttackRelease("4n");
+            try {
+                bellSynth.triggerAttackRelease("4n");
+            } catch (e) {}
         }
 
         function playEndBell() {
             if (!isSoundEnabled || !bellSynth) return;
-            // Play three soft strikes
-            bellSynth.triggerAttackRelease("4n", "+0");
-            bellSynth.triggerAttackRelease("4n", "+1.5");
-            bellSynth.triggerAttackRelease("4n", "+3");
+            try {
+                bellSynth.triggerAttackRelease("4n", "+0");
+                bellSynth.triggerAttackRelease("4n", "+1.2");
+                bellSynth.triggerAttackRelease("4n", "+2.5");
+            } catch (e) {}
         }
 
         function startDrone() {
             if (!isSoundEnabled || !droneSynth) return;
-            // Play a soothing C major chord spread out
-            droneSynth.triggerAttack(["C3", "E3", "G3", "C4"]);
+            try {
+                droneSynth.triggerAttack(["C3", "G3", "C4", "E4"]);
+            } catch (e) {}
         }
 
         function stopDrone() {
             if (droneSynth) {
-                droneSynth.triggerRelease(["C3", "E3", "G3", "C4"]);
+                try {
+                    droneSynth.triggerRelease(["C3", "G3", "C4", "E4"]);
+                } catch (e) {}
             }
         }
 
@@ -499,17 +753,19 @@
             isSoundEnabled = !isSoundEnabled;
             const icon = document.getElementById('sound-icon');
             if (isSoundEnabled) {
-                icon.className = "ph-fill ph-speaker-high text-xl";
-                document.getElementById('btn-sound-toggle').classList.replace('text-slate-400', 'text-emerald-600');
+                icon.className = "ph-fill ph-speaker-high text-lg text-emerald-700";
+                showToast("Ambient sound enabled");
                 if (isRunning) startDrone();
             } else {
-                icon.className = "ph ph-speaker-x text-xl text-slate-400";
-                document.getElementById('btn-sound-toggle').classList.replace('text-emerald-600', 'text-slate-400');
+                icon.className = "ph-bold ph-speaker-x text-lg text-slate-400";
+                showToast("Sound muted");
                 stopDrone();
             }
         });
 
-        // --- TIMER LOGIC ---
+        // ==========================================
+        // 4. TIMER CONTROLS
+        // ==========================================
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');
@@ -525,7 +781,6 @@
                 const mins = e.target.value;
                 elSliderValue.textContent = mins;
                 timeLeft = mins * 60;
-                totalSessionTime = timeLeft;
                 updateTimeDisplay(timeLeft);
             }
         });
@@ -534,9 +789,7 @@
             if (!isAudioInitialized) await initAudio();
             
             isRunning = true;
-            currentSessionStartTime = Date.now();
             
-            // UI Updates
             document.body.classList.add('timer-active');
             btnStart.classList.add('hidden');
             elDurationSelector.classList.add('hidden');
@@ -544,18 +797,17 @@
             btnStop.classList.remove('hidden');
             timerStatus.textContent = "Meditating";
             
-            // Background change for deeper focus
-            document.body.style.backgroundColor = '#f0fdf4'; // very light green
+            document.body.style.backgroundColor = '#f0fdf4'; 
             
             playStartBell();
-            setTimeout(startDrone, 2000); // fade in drone after bell
+            setTimeout(startDrone, 1500);
 
             timerInterval = setInterval(() => {
                 timeLeft--;
                 updateTimeDisplay(timeLeft);
                 
                 if (timeLeft <= 0) {
-                    endSession(true); // Completed
+                    endSession(true);
                 }
             }, 1000);
         });
@@ -568,12 +820,12 @@
             document.body.classList.remove('timer-active');
             btnPause.classList.add('hidden');
             btnStart.classList.remove('hidden');
-            btnStart.innerHTML = '<i class="ph ph-play-circle text-2xl"></i> Resume';
+            btnStart.innerHTML = '<i class="ph-fill ph-play text-2xl"></i> <span>Resume</span>';
             timerStatus.textContent = "Paused";
         });
 
         btnStop.addEventListener('click', () => {
-            endSession(false); // Ended early
+            endSession(false);
         });
 
         function endSession(completed) {
@@ -585,25 +837,25 @@
                 playEndBell();
             }
 
-            // Calculate actual time meditated
             const intendedTime = elDurationSlider.value * 60;
             const actualTimeSec = intendedTime - Math.max(0, timeLeft);
             
             resetTimerUI();
 
-            if (actualTimeSec >= 60) { // Only save sessions > 1 minute
+            // Record session if >= 60 seconds (1 minute requirement)
+            if (actualTimeSec >= 60) {
                 showFeedbackModal(actualTimeSec);
             } else {
-                showToast("Session too short to record.");
+                showToast("Sessions under 1 minute are not recorded.", "info");
             }
         }
 
         function resetTimerUI() {
             document.body.classList.remove('timer-active');
-            document.body.style.backgroundColor = '#fdf5f6'; // back to pink
+            document.body.style.backgroundColor = '#fdf5f6';
             
             btnStart.classList.remove('hidden');
-            btnStart.innerHTML = '<i class="ph ph-play-circle text-2xl"></i> Start';
+            btnStart.innerHTML = '<i class="ph-fill ph-play text-2xl"></i> <span>Start Session</span>';
             btnPause.classList.add('hidden');
             btnStop.classList.add('hidden');
             elDurationSelector.classList.remove('hidden');
@@ -613,20 +865,24 @@
             timerStatus.textContent = "Ready";
         }
 
-        // --- FEEDBACK & DATA ---
-        let pendingSessionData = null;
-
+        // ==========================================
+        // 5. FEEDBACK & REFLECTION MODAL
+        // ==========================================
         function showFeedbackModal(durationSec) {
+            const mins = Math.round(durationSec / 60);
+            feedbackDurationBadge.textContent = `${mins} minute${mins === 1 ? '' : 's'} completed`;
+
             pendingSessionData = {
+                id: 'sess_' + Date.now(),
                 date: new Date().toISOString(),
                 durationSec: durationSec,
-                mood: 'Neutral', // default
+                mood: 'Neutral',
                 note: ''
             };
 
-            // Reset modal state
-            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.add('grayscale'));
-            document.querySelector('.mood-btn[data-mood="Neutral"]').classList.remove('grayscale');
+            document.querySelectorAll('.mood-btn span:first-child').forEach(s => s.classList.add('grayscale'));
+            const neutralSpan = document.querySelector('.mood-btn[data-mood="Neutral"] span:first-child');
+            if (neutralSpan) neutralSpan.classList.remove('grayscale');
             selectedMood = 'Neutral';
             feedbackNote.value = '';
             
@@ -642,64 +898,72 @@
             modalFeedbackContent.classList.add('scale-95');
             setTimeout(() => {
                 modalFeedback.classList.add('hidden');
-                pendingSessionData = null;
             }, 300);
         }
 
-        // Mood Selection
         document.querySelectorAll('.mood-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.mood-btn').forEach(b => b.classList.add('grayscale'));
-                e.target.classList.remove('grayscale');
-                selectedMood = e.target.dataset.mood;
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mood-btn span:first-child').forEach(s => s.classList.add('grayscale'));
+                const iconSpan = btn.querySelector('span:first-child');
+                if (iconSpan) iconSpan.classList.remove('grayscale');
+                selectedMood = btn.dataset.mood;
             });
         });
 
-        let pendingAction = null;
-
         btnSaveFeedback.addEventListener('click', () => {
-            if (!currentUser) {
-                pendingAction = 'save';
+            if (!currentUser && isFirebaseConnected) {
+                pendingPostAuthAction = 'save';
                 showAuthModal();
                 return;
             }
             saveCurrentFeedback();
         });
 
-        function saveCurrentFeedback() {
-            if (pendingSessionData) {
-                pendingSessionData.mood = selectedMood;
-                pendingSessionData.note = feedbackNote.value.trim();
-                appData.sessions.push(pendingSessionData);
-                saveData();
-                renderCalendarAndStats();
-                showToast("Session recorded. Great job!");
-            }
-            hideFeedbackModal();
-        }
-
         btnSkipFeedback.addEventListener('click', () => {
-            if (!currentUser) {
-                pendingAction = 'skip';
+            if (!currentUser && isFirebaseConnected) {
+                pendingPostAuthAction = 'skip';
                 showAuthModal();
                 return;
             }
             saveCurrentSkip();
         });
 
-        function saveCurrentSkip() {
+        async function saveCurrentFeedback() {
             if (pendingSessionData) {
-                // Save just time, no feedback
+                pendingSessionData.mood = selectedMood;
+                pendingSessionData.note = feedbackNote.value.trim();
                 appData.sessions.push(pendingSessionData);
-                saveData();
+                await persistData();
                 renderCalendarAndStats();
-                showToast("Session recorded.");
+                showToast("Reflection saved to your journey!", "success");
             }
             hideFeedbackModal();
+            pendingSessionData = null;
         }
 
-        // --- AUTH UI ---
+        async function saveCurrentSkip() {
+            if (pendingSessionData) {
+                pendingSessionData.mood = selectedMood || 'Neutral';
+                pendingSessionData.note = '';
+                appData.sessions.push(pendingSessionData);
+                await persistData();
+                renderCalendarAndStats();
+                showToast("Session recorded!", "success");
+            }
+            hideFeedbackModal();
+            pendingSessionData = null;
+        }
+
+        // ==========================================
+        // 6. AUTHENTICATION (Google + Email/Password)
+        // ==========================================
         function showAuthModal() {
+            setAuthMode('signin');
+            authErrorBox.classList.add('hidden');
+            authEmail.value = '';
+            authPassword.value = '';
+            authName.value = '';
+
             modalAuth.classList.remove('hidden');
             setTimeout(() => {
                 modalAuth.classList.remove('opacity-0');
@@ -715,101 +979,366 @@
             }, 300);
         }
 
+        function setAuthMode(mode) {
+            authMode = mode;
+            authErrorBox.classList.add('hidden');
+            if (mode === 'signin') {
+                authTabSignin.classList.add('bg-white', 'text-emerald-900', 'shadow-sm');
+                authTabSignin.classList.remove('text-slate-500');
+                authTabSignup.classList.remove('bg-white', 'text-emerald-900', 'shadow-sm');
+                authTabSignup.classList.add('text-slate-500');
+
+                authTitle.textContent = "Sign In to Mindful Moments";
+                authSubtitle.textContent = "Access your synchronized meditation journal and streaks.";
+                authNameField.classList.add('hidden');
+                authSubmitText.textContent = "Sign In";
+                btnForgotPassword.classList.remove('hidden');
+            } else {
+                authTabSignup.classList.add('bg-white', 'text-emerald-900', 'shadow-sm');
+                authTabSignup.classList.remove('text-slate-500');
+                authTabSignin.classList.remove('bg-white', 'text-emerald-900', 'shadow-sm');
+                authTabSignin.classList.add('text-slate-500');
+
+                authTitle.textContent = "Create Free Account";
+                authSubtitle.textContent = "Never lose your meditation reflections across all your devices.";
+                authNameField.classList.remove('hidden');
+                authSubmitText.textContent = "Create Account";
+                btnForgotPassword.classList.add('hidden');
+            }
+        }
+
+        authTabSignin.addEventListener('click', () => setAuthMode('signin'));
+        authTabSignup.addEventListener('click', () => setAuthMode('signup'));
+        btnHeaderLogin.addEventListener('click', showAuthModal);
         btnCancelAuth.addEventListener('click', hideAuthModal);
 
-        function executePendingAction() {
-            if (pendingAction === 'save') saveCurrentFeedback();
-            if (pendingAction === 'skip') saveCurrentSkip();
-            pendingAction = null;
-        }
+        btnContinueGuest.addEventListener('click', () => {
+            hideAuthModal();
+            if (pendingPostAuthAction === 'save') saveCurrentFeedback();
+            else if (pendingPostAuthAction === 'skip') saveCurrentSkip();
+            pendingPostAuthAction = null;
+            showToast("Continuing in local storage mode", "info");
+        });
 
         btnLoginGoogle.addEventListener('click', async () => {
-            if (useFirebase && auth) {
+            authErrorBox.classList.add('hidden');
+            if (isFirebaseConnected && auth) {
                 try {
                     const provider = new GoogleAuthProvider();
-                    await signInWithPopup(auth, provider);
+                    provider.setCustomParameters({ prompt: 'select_account' });
+                    const res = await signInWithPopup(auth, provider);
                     hideAuthModal();
+                    showToast(`Welcome, ${res.user.displayName || 'friend'}!`, "success");
                     executePendingAction();
-                } catch (e) {
-                    console.error("Login failed, attempting anonymous fallback", e);
-                    await signInAnonymously(auth);
-                    hideAuthModal();
-                    executePendingAction();
+                } catch (err) {
+                    console.error("Google sign in failed", err);
+                    showAuthError(friendlyAuthError(err.code || err.message));
                 }
             } else {
-                currentUser = { uid: 'mock-user-123' };
+                currentUser = { uid: 'guest_user', displayName: 'Guest Yogi', email: 'guest@mindful.app' };
+                updateUserUI(currentUser);
                 hideAuthModal();
+                showToast("Signed in as Guest (Connect Firebase in DB Setup for cloud sync)", "info");
                 executePendingAction();
-                showToast("Logged in successfully!");
             }
         });
 
-        btnLoginEmail.addEventListener('click', async () => {
-            if (useFirebase && auth) {
-                try {
-                    await signInAnonymously(auth);
-                    hideAuthModal();
-                    executePendingAction();
-                } catch (e) {
-                    console.error("Login failed", e);
-                }
-            } else {
-                currentUser = { uid: 'mock-user-123' };
-                hideAuthModal();
-                executePendingAction();
-                showToast("Logged in successfully!");
-            }
-        });
+        btnSubmitAuth.addEventListener('click', async () => {
+            authErrorBox.classList.add('hidden');
+            const email = authEmail.value.trim();
+            const password = authPassword.value;
+            const name = authName.value.trim();
 
-        // --- STORAGE ---
-        async function saveData() {
-            if (useFirebase && currentUser) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'mindful_data', 'main');
-                    await setDoc(docRef, appData);
-                } catch(e) {
-                    console.error("Firestore save error", e);
-                }
+            if (!email || !password) {
+                showAuthError("Please fill in both email and password.");
+                return;
             }
-        }
 
-        async function loadData() {
-            if (useFirebase && currentUser) {
+            if (password.length < 6) {
+                showAuthError("Password must be at least 6 characters.");
+                return;
+            }
+
+            if (isFirebaseConnected && auth) {
+                btnSubmitAuth.disabled = true;
+                btnSubmitAuth.classList.add('opacity-70');
                 try {
-                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'mindful_data', 'main');
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        appData = docSnap.data();
-                        if(!appData.sessions) appData.sessions = [];
-                        renderCalendarAndStats();
+                    if (authMode === 'signup') {
+                        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                        if (name && userCredential.user) {
+                            await updateProfile(userCredential.user, { displayName: name });
+                        }
+                        showToast("Account created successfully!", "success");
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, password);
+                        showToast("Welcome back!", "success");
                     }
-                } catch(e) {
-                    console.error("Firestore load error", e);
+                    hideAuthModal();
+                    executePendingAction();
+                } catch (err) {
+                    console.error("Auth error:", err);
+                    showAuthError(friendlyAuthError(err.code || err.message));
+                } finally {
+                    btnSubmitAuth.disabled = false;
+                    btnSubmitAuth.classList.remove('opacity-70');
+                }
+            } else {
+                currentUser = { 
+                    uid: 'user_' + btoa(email).replace(/=/g, ''),
+                    displayName: name || email.split('@')[0], 
+                    email: email 
+                };
+                localStorage.setItem('mm_mock_user', JSON.stringify(currentUser));
+                updateUserUI(currentUser);
+                hideAuthModal();
+                showToast("Signed in locally. Connect Firebase for real multi-device cloud sync!", "info");
+                executePendingAction();
+            }
+        });
+
+        btnForgotPassword.addEventListener('click', async () => {
+            const email = authEmail.value.trim();
+            if (!email) {
+                showAuthError("Please enter your email above to reset password.");
+                return;
+            }
+            if (isFirebaseConnected && auth) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    showToast(`Password reset link sent to ${email}`, "success");
+                } catch (err) {
+                    showAuthError(friendlyAuthError(err.code || err.message));
+                }
+            } else {
+                showToast("Password reset demo: Please configure Firebase credentials.", "info");
+            }
+        });
+
+        btnLogout.addEventListener('click', async () => {
+            if (isFirebaseConnected && auth) {
+                await signOut(auth);
+            }
+            currentUser = null;
+            localStorage.removeItem('mm_mock_user');
+            updateUserUI(null);
+            loadLocalData();
+            showToast("Signed out successfully", "info");
+        });
+
+        function executePendingAction() {
+            if (pendingPostAuthAction === 'save') saveCurrentFeedback();
+            else if (pendingPostAuthAction === 'skip') saveCurrentSkip();
+            pendingPostAuthAction = null;
+        }
+
+        function showAuthError(msg) {
+            authErrorMsg.textContent = msg;
+            authErrorBox.classList.remove('hidden');
+        }
+
+        function friendlyAuthError(code) {
+            switch(code) {
+                case 'auth/invalid-credential':
+                case 'auth/wrong-password':
+                case 'auth/user-not-found':
+                    return 'Invalid email or password.';
+                case 'auth/email-already-in-use':
+                    return 'An account with this email already exists. Try signing in.';
+                case 'auth/weak-password':
+                    return 'Password should be at least 6 characters.';
+                case 'auth/invalid-email':
+                    return 'Please enter a valid email address.';
+                case 'auth/popup-closed-by-user':
+                    return 'Google Sign In was closed before completing.';
+                case 'auth/unauthorized-domain':
+                    return 'Domain not authorized in Firebase Console. Add your GitHub/custom domain in Firebase Auth Settings.';
+                default:
+                    return code || 'Authentication failed. Please check your credentials.';
+            }
+        }
+
+        function updateUserUI(user) {
+            if (user) {
+                userLoggedOutView.classList.add('hidden');
+                userLoggedInView.classList.remove('hidden');
+                
+                const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Mindful Yogi');
+                userDisplayName.textContent = name;
+                
+                if (user.photoURL) {
+                    userAvatar.src = user.photoURL;
+                    userAvatar.classList.remove('hidden');
+                    userAvatarFallback.classList.add('hidden');
+                } else {
+                    userAvatarFallback.textContent = name.charAt(0).toUpperCase();
+                    userAvatar.classList.add('hidden');
+                    userAvatarFallback.classList.remove('hidden');
+                }
+            } else {
+                userLoggedOutView.classList.remove('hidden');
+                userLoggedInView.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // 7. STORAGE & CLOUD DATABASE SYNC
+        // ==========================================
+        async function persistData() {
+            localStorage.setItem('mm_local_data', JSON.stringify(appData));
+
+            if (isFirebaseConnected && db && currentUser) {
+                try {
+                    const userDocRef = doc(db, 'users', currentUser.uid);
+                    await setDoc(userDocRef, {
+                        email: currentUser.email || '',
+                        displayName: currentUser.displayName || '',
+                        updatedAt: new Date().toISOString(),
+                        sessions: appData.sessions
+                    }, { merge: true });
+                } catch (err) {
+                    console.error("Firestore sync error:", err);
+                    showToast("Saved locally. Check Firestore security rules if cloud write failed.", "info");
                 }
             }
         }
 
-        // --- NAVIGATION & UI HELPERS ---
-        const navTimer = document.getElementById('nav-timer');
-        const navStats = document.getElementById('nav-stats');
-        const viewTimer = document.getElementById('view-timer');
-        const viewStats = document.getElementById('view-stats');
+        async function loadUserDataFromCloud() {
+            if (isFirebaseConnected && db && currentUser) {
+                try {
+                    const userDocRef = doc(db, 'users', currentUser.uid);
+                    const snap = await getDoc(userDocRef);
+                    if (snap.exists()) {
+                        const cloudData = snap.data();
+                        if (cloudData && Array.isArray(cloudData.sessions)) {
+                            const existingIds = new Set(cloudData.sessions.map(s => s.id || s.date));
+                            const localUnique = appData.sessions.filter(s => !existingIds.has(s.id || s.date));
+                            appData.sessions = [...cloudData.sessions, ...localUnique];
+                        }
+                    }
+                    persistData();
+                    renderCalendarAndStats();
+                } catch (err) {
+                    console.warn("Could not load from Firestore, using local data", err);
+                    loadLocalData();
+                }
+            }
+        }
 
+        function loadLocalData() {
+            try {
+                const stored = localStorage.getItem('mm_local_data');
+                if (stored) {
+                    appData = JSON.parse(stored);
+                    if (!appData.sessions) appData.sessions = [];
+                }
+            } catch (e) {
+                appData = { sessions: [], lastLogin: null };
+            }
+            renderCalendarAndStats();
+        }
+
+        // ==========================================
+        // 8. DATABASE CONFIGURATION MODAL HANDLERS
+        // ==========================================
+        btnConfigSettings.addEventListener('click', () => {
+            modalConfig.classList.remove('hidden');
+            setTimeout(() => {
+                modalConfig.classList.remove('opacity-0');
+                modalConfig.querySelector('div').classList.remove('scale-95');
+            }, 10);
+        });
+
+        btnCloseConfig.addEventListener('click', () => {
+            modalConfig.classList.add('opacity-0');
+            modalConfig.querySelector('div').classList.add('scale-95');
+            setTimeout(() => modalConfig.classList.add('hidden'), 300);
+        });
+
+        btnSaveConfig.addEventListener('click', () => {
+            const raw = configJsonInput.value.trim();
+            if (!raw) {
+                showToast("Please paste your Firebase configuration object.", "info");
+                return;
+            }
+
+            try {
+                let parsedConfig;
+                if (raw.startsWith('{')) {
+                    parsedConfig = JSON.parse(raw);
+                } else if (raw.includes('firebaseConfig =')) {
+                    const jsonStr = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+                    parsedConfig = JSON.parse(jsonStr);
+                } else {
+                    throw new Error("Invalid format");
+                }
+
+                if (!parsedConfig.apiKey || !parsedConfig.projectId) {
+                    throw new Error("Missing apiKey or projectId");
+                }
+
+                localStorage.setItem('mm_custom_firebase_config', JSON.stringify(parsedConfig));
+                showToast("Firebase Config saved! Reloading...", "success");
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (e) {
+                alert("Invalid JSON format. Please paste the valid Javascript object from Firebase console.");
+            }
+        });
+
+        btnResetConfig.addEventListener('click', () => {
+            localStorage.removeItem('mm_custom_firebase_config');
+            showToast("Switched to Local Offline Demo mode.", "info");
+            setTimeout(() => window.location.reload(), 800);
+        });
+
+        // ==========================================
+        // 9. EXCEL / CSV EXPORT
+        // ==========================================
+        btnExportCsv.addEventListener('click', () => {
+            if (!appData.sessions || appData.sessions.length === 0) {
+                showToast("No reflection entries to export yet!", "info");
+                return;
+            }
+
+            const headers = ["Session ID", "Date", "Time", "Duration (Minutes)", "Mood", "Reflection Note"];
+            const rows = appData.sessions.map(s => {
+                const d = new Date(s.date);
+                const dateStr = d.toLocaleDateString();
+                const timeStr = d.toLocaleTimeString();
+                const mins = Math.round(s.durationSec / 60);
+                const mood = s.mood || 'Neutral';
+                const note = (s.note || '').replace(/"/g, '""');
+                return [s.id || '', dateStr, timeStr, mins, mood, `"${note}"`];
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Mindful_Moments_Journal_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Exported to CSV / Excel format!", "success");
+        });
+
+        // ==========================================
+        // 10. NAVIGATION & QUOTES
+        // ==========================================
         navTimer.addEventListener('click', () => {
-            navStats.classList.remove('text-emerald-800', 'border-b-2', 'border-emerald-500');
-            navStats.classList.add('text-slate-500');
-            navTimer.classList.remove('text-slate-500');
-            navTimer.classList.add('text-emerald-800', 'border-b-2', 'border-emerald-500');
+            navStats.classList.remove('bg-white', 'text-emerald-800', 'shadow-sm');
+            navStats.classList.add('text-slate-600');
+            navTimer.classList.add('bg-white', 'text-emerald-800', 'shadow-sm');
+            navTimer.classList.remove('text-slate-600');
             
             viewStats.classList.add('hidden');
             viewTimer.classList.remove('hidden');
         });
 
         navStats.addEventListener('click', () => {
-            navTimer.classList.remove('text-emerald-800', 'border-b-2', 'border-emerald-500');
-            navTimer.classList.add('text-slate-500');
-            navStats.classList.remove('text-slate-500');
-            navStats.classList.add('text-emerald-800', 'border-b-2', 'border-emerald-500');
+            navTimer.classList.remove('bg-white', 'text-emerald-800', 'shadow-sm');
+            navTimer.classList.add('text-slate-600');
+            navStats.classList.add('bg-white', 'text-emerald-800', 'shadow-sm');
+            navStats.classList.remove('text-slate-600');
             
             viewTimer.classList.add('hidden');
             viewStats.classList.remove('hidden');
@@ -828,30 +1357,39 @@
             setTimeout(() => {
                 elQuote.innerHTML = `"${quote.text}"`;
                 elAuthor.innerHTML = `&mdash; ${quote.author}`;
-                elQuote.style.opacity = 0.8;
-                elAuthor.style.opacity = 0.6;
+                elQuote.style.opacity = 0.85;
+                elAuthor.style.opacity = 0.7;
             }, 300);
         }
 
-        function showToast(msg) {
+        function showToast(msg, type = 'info') {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').textContent = msg;
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = msg;
+            if (type === 'success') {
+                toastIcon.className = "ph-fill ph-check-circle text-emerald-400 text-lg";
+            } else {
+                toastIcon.className = "ph-fill ph-info text-sky-400 text-lg";
+            }
+
             toast.classList.remove('opacity-0', 'translate-y-10');
-            
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-10');
-            }, 3000);
+            }, 3200);
         }
 
-        // --- CALENDAR & STATS RENDERER ---
+        // ==========================================
+        // 11. STATS, STREAK & CALENDAR RENDERER
+        // ==========================================
         function updateStreakFlame(streak) {
             const flameIcon = document.getElementById('streak-flame-icon');
             const particleContainer = document.getElementById('flame-particles');
             if (!flameIcon || !particleContainer) return;
             
-            // Reset classes
             flameIcon.className = "ph-fill ph-fire text-3xl relative z-10 transition-all duration-700";
-            particleContainer.innerHTML = ''; // Clear particles
+            particleContainer.innerHTML = '';
             
             if (streak === 0) {
                 flameIcon.classList.add('text-slate-300', 'scale-90');
@@ -859,42 +1397,39 @@
                 return;
             }
             
-            // 10 Colors sequence for 365 days gamification
             const colors = [
                 'text-yellow-400', 'text-emerald-400', 'text-green-500', 
-                'text-sky-300', 'text-blue-500', 'text-blue-800', 
-                'text-orange-300', 'text-orange-600', 'text-red-600', 'text-pink-500'
+                'text-sky-400', 'text-blue-500', 'text-indigo-500', 
+                'text-orange-400', 'text-orange-600', 'text-red-600', 'text-pink-500'
             ];
             const shadowHex = [
                 '#facc15', '#34d399', '#22c55e', 
-                '#7dd3fc', '#3b82f6', '#1e40af', 
-                '#fdba74', '#ea580c', '#dc2626', '#ec4899'
+                '#38bdf8', '#3b82f6', '#6366f1', 
+                '#fb923c', '#ea580c', '#dc2626', '#ec4899'
             ];
             
-            // 4 Days per color cycle
             const cycleDay = streak - 1;
             const colorIndex = Math.floor(cycleDay / 4) % colors.length;
-            const phase = (cycleDay % 4) + 1; // 1 (low), 2 (glowing), 3 (shiny), 4 (fierce)
+            const phase = (cycleDay % 4) + 1;
             
             const activeColorClass = colors[colorIndex];
             const activeShadow = shadowHex[colorIndex];
             
             flameIcon.classList.add(...activeColorClass.split(' '));
             
-            // Apply intensity based on phase
             if (phase === 1) {
-                flameIcon.classList.add('scale-90', 'animate-flame');
-                flameIcon.style.filter = `drop-shadow(0 0 4px ${activeShadow})`;
+                flameIcon.classList.add('scale-95', 'animate-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 6px ${activeShadow})`;
             } else if (phase === 2) {
-                flameIcon.classList.add('scale-100', 'animate-flame');
-                flameIcon.style.filter = `drop-shadow(0 0 10px ${activeShadow})`;
+                flameIcon.classList.add('scale-105', 'animate-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 12px ${activeShadow})`;
             } else if (phase === 3) {
-                flameIcon.classList.add('scale-110', 'animate-flame');
-                flameIcon.style.filter = `drop-shadow(0 0 16px ${activeShadow})`;
+                flameIcon.classList.add('scale-115', 'animate-flame');
+                flameIcon.style.filter = `drop-shadow(0 0 18px ${activeShadow})`;
                 createParticles(particleContainer, activeShadow, 4);
             } else if (phase === 4) {
                 flameIcon.classList.add('scale-125', 'fierce-flame');
-                flameIcon.style.filter = `drop-shadow(0 0 24px ${activeShadow})`;
+                flameIcon.style.filter = `drop-shadow(0 0 26px ${activeShadow})`;
                 createParticles(particleContainer, activeShadow, 8);
             }
         }
@@ -904,10 +1439,10 @@
                 const p = document.createElement('div');
                 p.className = 'particle';
                 p.style.backgroundColor = color;
-                const size = Math.random() * 4 + 3; // 3-7px
+                const size = Math.random() * 4 + 3;
                 p.style.width = `${size}px`;
                 p.style.height = `${size}px`;
-                p.style.left = `${Math.random() * 80 + 10}%`; // center-ish
+                p.style.left = `${Math.random() * 80 + 10}%`;
                 p.style.bottom = '10%';
                 p.style.animationDelay = `${Math.random() * 0.8}s`;
                 p.style.animationDuration = `${Math.random() * 0.5 + 0.8}s`;
@@ -916,30 +1451,29 @@
         }
 
         function renderCalendarAndStats() {
-            const sessions = appData.sessions;
+            const sessions = appData.sessions || [];
             
-            // 1. Calculate Stats
             let totalSec = 0;
             const daysMeditated = new Set();
             
             sessions.forEach(s => {
-                totalSec += s.durationSec;
-                const dateStr = new Date(s.date).toDateString();
-                daysMeditated.add(dateStr);
+                totalSec += (s.durationSec || 0);
+                if (s.date) {
+                    const dateStr = new Date(s.date).toDateString();
+                    daysMeditated.add(dateStr);
+                }
             });
 
             const hours = Math.floor(totalSec / 3600);
             const mins = Math.floor((totalSec % 3600) / 60);
             
-            document.getElementById('stat-total-hours').textContent = `${hours}h ${mins}m`;
+            document.getElementById('stat-total-hours').textContent = `${hours} h ${mins} m`;
             document.getElementById('stat-total-sessions').textContent = sessions.length;
             
-            // Simple Streak Calc
             let streak = 0;
             let currentDay = new Date();
             currentDay.setHours(0,0,0,0);
             
-            // Check today first
             if (daysMeditated.has(currentDay.toDateString())) {
                 streak = 1;
                 let checkDay = new Date(currentDay);
@@ -949,7 +1483,6 @@
                     checkDay.setDate(checkDay.getDate() - 1);
                 }
             } else {
-                // Check if streak ended yesterday
                 let yesterday = new Date(currentDay);
                 yesterday.setDate(yesterday.getDate() - 1);
                 if(daysMeditated.has(yesterday.toDateString())) {
@@ -965,27 +1498,23 @@
             document.getElementById('stat-streak').textContent = `${streak} days`;
             updateStreakFlame(streak);
 
-            // 2. Render Calendar (Last 14 days)
             const calGrid = document.getElementById('calendar-grid');
             calGrid.innerHTML = '';
             
-            // Header
             const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
             days.forEach(d => {
-                calGrid.innerHTML += `<div class="text-slate-400 font-bold mb-2">${d}</div>`;
+                calGrid.innerHTML += `<div class="text-slate-400 font-bold mb-2 text-xs">${d}</div>`;
             });
 
-            // Fill days (get start day of week for 2 weeks ago)
             const today = new Date();
             const startRenderDate = new Date(today);
             startRenderDate.setDate(today.getDate() - 13);
             
-            // Adjust to sunday
             while (startRenderDate.getDay() !== 0) {
                 startRenderDate.setDate(startRenderDate.getDate() - 1);
             }
 
-            for (let i = 0; i < 21; i++) { // 3 weeks total view
+            for (let i = 0; i < 21; i++) {
                 const loopDate = new Date(startRenderDate);
                 loopDate.setDate(loopDate.getDate() + i);
                 const loopDateStr = loopDate.toDateString();
@@ -994,12 +1523,12 @@
                 const hasSession = daysMeditated.has(loopDateStr);
                 const isFuture = loopDate > today;
                 
-                let classes = "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mx-auto transition-all ";
+                let classes = "w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center mx-auto transition-all text-xs ";
                 
                 if (hasSession) {
-                    classes += "bg-emerald-500 text-white font-bold shadow-md";
+                    classes += "bg-emerald-500 text-white font-bold shadow-sm ring-2 ring-emerald-200";
                 } else if (isToday) {
-                    classes += "border-2 border-emerald-400 text-emerald-800 font-bold bg-emerald-50";
+                    classes += "border-2 border-emerald-500 text-emerald-900 font-bold bg-emerald-50";
                 } else if (isFuture) {
                     classes += "text-slate-300";
                 } else {
@@ -1009,38 +1538,42 @@
                 calGrid.innerHTML += `<div class="${classes}">${loopDate.getDate()}</div>`;
             }
 
-            // 3. Render Journal
             const journalList = document.getElementById('journal-list');
+            const journalCountBadge = document.getElementById('journal-count-badge');
             journalList.innerHTML = '';
             
-            const reversedSessions = [...sessions].reverse(); // newest first
-            const withNotes = reversedSessions.filter(s => s.note && s.note.trim() !== '' || s.mood);
+            const reversedSessions = [...sessions].reverse();
+            const withNotes = reversedSessions.filter(s => (s.note && s.note.trim() !== '') || s.mood);
             
+            journalCountBadge.textContent = `${withNotes.length} reflections`;
+
             if (withNotes.length === 0) {
-                journalList.innerHTML = '<div class="text-center text-slate-400 mt-10 italic">No reflections yet.</div>';
+                journalList.innerHTML = '<div class="text-center text-slate-400 mt-16 italic text-sm">No entries yet. Complete a session to reflect.</div>';
             } else {
                 withNotes.forEach(s => {
                     const d = new Date(s.date);
-                    const dateFmt = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    const dateFmt = d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                    const timeFmt = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const moodEmoji = s.mood === 'Peaceful' ? '☀️' : s.mood === 'Struggled' ? '☁️' : '🌤️';
                     const min = Math.round(s.durationSec / 60);
                     
                     journalList.innerHTML += `
-                        <div class="bg-white/60 rounded-xl p-3 border border-slate-100 shadow-sm text-left">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs font-bold text-slate-500">${dateFmt} • ${min}m</span>
-                                <span title="${s.mood}">${moodEmoji}</span>
+                        <div class="bg-white/80 rounded-2xl p-4 border border-slate-100 shadow-sm text-left hover:border-emerald-200 transition-colors">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">${moodEmoji}</span>
+                                    <span class="text-xs font-bold text-slate-700">${dateFmt} <span class="font-normal text-slate-400 text-[11px]">at ${timeFmt}</span></span>
+                                </div>
+                                <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">${min} min</span>
                             </div>
-                            ${s.note ? `<p class="text-sm text-slate-700 italic">"${s.note}"</p>` : ''}
+                            ${s.note ? `<p class="text-xs md:text-sm text-slate-700 leading-relaxed italic bg-slate-50/60 p-2.5 rounded-xl mt-1 border border-slate-100/80">"${s.note}"</p>` : ''}
                         </div>
                     `;
                 });
             }
         }
 
-        // Init
-        window.addEventListener('load', initApp);
-
+        window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
